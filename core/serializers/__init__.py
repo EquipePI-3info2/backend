@@ -1,2 +1,2 @@
 from .user import UserRegistrationSerializer, UserSerializer
-from .sabor import UserSerializer
+from .sabor import SaborSerializer
