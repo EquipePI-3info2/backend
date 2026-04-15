@@ -4,3 +4,4 @@ from .categoria import CategoriaSerializer
 from .produto import ProdutoSerializer
 from .pagamento import PagamentoSerializer
 from .pedido import PedidoSerializer
+from .item_pedido import ItemPedido
