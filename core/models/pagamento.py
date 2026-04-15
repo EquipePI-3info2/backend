@@ -20,7 +20,13 @@ class Pagamento(models.Model):
     ]
 
     valor = models.DecimalField(max_digits=10, decimal_places=2)
-    status_pagamento = models.CharField(max_length=20, choices=STATUS_CHOICES)
+
+    status_pagamento = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='pendente'
+    )
+
     metodo_pagamento = models.CharField(max_length=20, choices=METODO_CHOICES)
     tipo_movimentacao = models.CharField(max_length=20, choices=TIPO_MOVIMENTACAO_CHOICES)
 

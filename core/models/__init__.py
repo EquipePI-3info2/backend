@@ -3,3 +3,4 @@ from .sabor import Sabor
 from .categoria import Categoria
 from .produto import Produto
 from .pagamento import Pagamento
+from .pedido import Pedido

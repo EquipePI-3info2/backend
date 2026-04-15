@@ -15,6 +15,7 @@ from rest_framework_simplejwt.views import (
 from core.views import (
     CategoriaViewSet,
     PagamentoViewSet,
+    PedidoViewSet,
     ProdutoViewSet,
     SaborViewSet,
     UserRegistrationView,
@@ -28,6 +29,7 @@ router.register(r'sabores', SaborViewSet, basename='sabores')
 router.register(r'categorias', CategoriaViewSet, basename='categorias')
 router.register(r'produtos', ProdutoViewSet, basename='produtos')
 router.register(r'pagamentos', PagamentoViewSet, basename='pagamentos')
+router.register(r'pedidos', PedidoViewSet, basename='pedidos')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
