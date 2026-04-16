@@ -40,6 +40,9 @@ INSTALLED_APPS = [
     'drf_spectacular',
     'rest_framework',
     'core',
+    'catalog',   
+    'orders',   
+    'stock',     
 ]
 
 MIDDLEWARE = [
@@ -135,8 +138,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Configurações do DRF e drf-spectacular (OpenAPI/Swagger)
 SPECTACULAR_SETTINGS = {
-    'TITLE': '<PROJETO> API',
-    'DESCRIPTION': 'API para o projeto <descreva aqui seu projeto>.',
+    'TITLE': 'Brookiê API',
+    'DESCRIPTION': 'API do e-commerce Brookiê — cookies e brownies artesanais.',
     'VERSION': '1.0.0',
 }
 
@@ -145,16 +148,28 @@ AUTH_USER_MODEL = 'core.User'
 
 # Configurações do Django REST Framework
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': ('rest_framework_simplejwt.authentication.JWTAuthentication',),
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
     'DEFAULT_PAGINATION_CLASS': 'app.pagination.CustomPagination',
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'PAGE_SIZE': 10,
+    # ← NOVO: filtros globais usados pelo catalog (busca, ordenação, django-filter)
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter',
+        'rest_framework.filters.OrderingFilter',
+    ],
+    # ← NOVO: acesso público por padrão (catalog é público; admin protege por is_staff)
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ],
 }
 
 # Configurações do Simple JWT
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=180),  # Tokens de acesso expiram em 3 horas
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),  # Tokens de atualização expiram em 1 dia
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),       # Tokens de atualização expiram em 1 dia
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
