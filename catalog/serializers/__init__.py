@@ -1,7 +1,10 @@
 from .category import CategorySerializer, CategoryWriteSerializer
-from .product  import ProductSerializer, ProductAdminSerializer, ProductWriteSerializer
+from .product import ProductSerializer, ProductAdminSerializer, ProductWriteSerializer
 
 __all__ = [
-    "CategorySerializer", "CategoryWriteSerializer",
-    "ProductSerializer", "ProductAdminSerializer", "ProductWriteSerializer",
+    "CategorySerializer",
+    "CategoryWriteSerializer",
+    "ProductSerializer",
+    "ProductAdminSerializer",
+    "ProductWriteSerializer",
 ]

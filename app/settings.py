@@ -8,15 +8,15 @@ from dotenv import load_dotenv
 # Carrega as variáveis de ambiente do arquivo .env
 load_dotenv()
 
-# Define o modo de execução da aplicação
-MODE = os.getenv('MODE')
+# Define o modo de execução da aplicação (padrão: DEVELOPMENT)
+MODE = os.getenv('MODE', 'DEVELOPMENT')
 
-# Constrói o caminho base do projeto, usado para definir caminhos relativos
+# Caminho base do projeto
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Segurança e configuração básica
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure')
-DEBUG = os.getenv('DEBUG', 'False')
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-troque-em-producao')
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
 ALLOWED_HOSTS = ['*']
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:3000',
@@ -25,6 +25,7 @@ CSRF_TRUSTED_ORIGINS = [
 CORS_ALLOW_ALL_ORIGINS = True
 
 # Aplicações instaladas
+# Cloudinary NÃO está aqui — só entra em produção no bloco abaixo
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -32,17 +33,15 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'cloudinary_storage',
-    'cloudinary',
     'corsheaders',
     'django_extensions',
     'django_filters',
     'drf_spectacular',
     'rest_framework',
     'core',
-    'catalog',   
-    'orders',   
-    'stock',     
+    'catalog',
+    'orders',
+    'stock',
 ]
 
 MIDDLEWARE = [
@@ -88,42 +87,45 @@ DATABASES = {
 
 # Validação de senhas
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# Configurações de internacionalização
+# Internacionalização
 LANGUAGE_CODE = 'pt-br'
 TIME_ZONE = 'America/Sao_Paulo'
 USE_I18N = True
 USE_TZ = True
 
-# Configurações de arquivos estáticos
+# Arquivos estáticos
 STATIC_URL = 'static/'
 
-# Configurações de arquivos de mídia (App Uploader)
+# Arquivos de mídia
 MEDIA_ENDPOINT = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 FILE_UPLOAD_PERMISSIONS = 0o640
 
-# Configurações específicas para desenvolvimento, migração e produção
+# ── Storage e MEDIA_URL separados por ambiente ───────────────────────────────
 if MODE == 'DEVELOPMENT':
     MY_IP = os.getenv('MY_IP', '127.0.0.1')
-    MEDIA_URL = f'http://{MY_IP}:19003/media/'
+    MEDIA_URL = f'http://{MY_IP}:8000/media/'
+    # Storage local — sem Cloudinary
+    STORAGES = {
+        'default': {
+            'BACKEND': 'django.core.files.storage.FileSystemStorage',
+        },
+        'staticfiles': {
+            'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
+        },
+    }
 else:
+    # Produção: Cloudinary para mídia, WhiteNoise para estáticos
     MEDIA_URL = '/media/'
     CLOUDINARY_URL = os.getenv('CLOUDINARY_URL')
     STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+    INSTALLED_APPS = ['cloudinary_storage', 'cloudinary'] + INSTALLED_APPS
     STORAGES = {
         'default': {
             'BACKEND': 'cloudinary_storage.storage.MediaCloudinaryStorage',
@@ -136,17 +138,17 @@ else:
 # Tipo padrão de campo para chaves primárias
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Configurações do DRF e drf-spectacular (OpenAPI/Swagger)
+# Modelo de usuário personalizado
+AUTH_USER_MODEL = 'core.User'
+
+# OpenAPI / Swagger
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Brookiê API',
     'DESCRIPTION': 'API do e-commerce Brookiê — cookies e brownies artesanais.',
     'VERSION': '1.0.0',
 }
 
-# Modelo de usuário personalizado
-AUTH_USER_MODEL = 'core.User'
-
-# Configurações do Django REST Framework
+# Django REST Framework
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -154,24 +156,21 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'app.pagination.CustomPagination',
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'PAGE_SIZE': 10,
-    # ← NOVO: filtros globais usados pelo catalog (busca, ordenação, django-filter)
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
         'rest_framework.filters.SearchFilter',
         'rest_framework.filters.OrderingFilter',
     ],
-    # ← NOVO: acesso público por padrão (catalog é público; admin protege por is_staff)
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',
     ],
 }
 
-# Configurações do Simple JWT
+# Simple JWT
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=180),  # Tokens de acesso expiram em 3 horas
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),       # Tokens de atualização expiram em 1 dia
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=180),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
-# Exibe as configurações principais para verificação
 print(f'{MODE = } \n{MEDIA_URL = } \n{DATABASES = }')
