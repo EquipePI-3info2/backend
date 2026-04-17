@@ -1,12 +1,7 @@
-from rest_framework.permissions import BasePermission, SAFE_METHODS
+from rest_framework.permissions import SAFE_METHODS, BasePermission
 
 
 class IsAdminOrReadOnly(BasePermission):
-    """
-    Regra de acesso do catálogo:
-      - GET, HEAD, OPTIONS → qualquer pessoa (inclusive anônimo)
-      - POST, PATCH, DELETE → somente is_staff=True
-    """
     message = "Apenas administradores podem modificar o catálogo."
 
     def has_permission(self, request, view):

@@ -1,15 +1,16 @@
-from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
+from rest_framework import serializers
+
 from ..models import Category
 
 
 class CategorySerializer(serializers.ModelSerializer):
     """Serializer público — usado na vitrine e na Home."""
-    image_url     = serializers.SerializerMethodField()
+    image_url = serializers.SerializerMethodField()
     product_count = serializers.SerializerMethodField()
 
     class Meta:
-        model  = Category
+        model = Category
         fields = [
             "id", "name", "slug", "description",
             "image_url", "is_active", "order",
@@ -36,5 +37,5 @@ class CategorySerializer(serializers.ModelSerializer):
 class CategoryWriteSerializer(serializers.ModelSerializer):
     """Serializer de escrita — somente para admin."""
     class Meta:
-        model  = Category
+        model = Category
         fields = ["name", "description", "image", "is_active", "order"]

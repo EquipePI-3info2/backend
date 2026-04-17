@@ -1,31 +1,38 @@
 """
 orders/models/order_item.py
 
-CORREÇÕES vs modelagem original:
-  - quantidade VARCHAR(45) → quantity INT  ← bug crítico corrigido
-  - subtotal_item → calculado via property (sem redundância)
-  - preco_unitario salvo no momento da compra (histórico de preço)
+Sem alterações em relação à versão revisada — já estava correto:
+  - quantity: PositiveIntegerField ✓
+  - unit_price: snapshot do preço no momento da compra ✓
+  - subtotal: property calculada (sem redundância) ✓
+  - unique_together [order, product]: evita duplicatas ✓
 """
 from django.db import models
+
 from catalog.models import Product
 from .order import Order
 
 
 class OrderItem(models.Model):
-    order      = models.ForeignKey(
-        Order, on_delete=models.CASCADE,
-        related_name="items", verbose_name="Pedido"
+    order = models.ForeignKey(
+        Order,
+        on_delete=models.CASCADE,
+        related_name="items",
+        verbose_name="Pedido",
     )
-    product    = models.ForeignKey(
-        Product, on_delete=models.PROTECT,
-        related_name="order_items", verbose_name="Produto"
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.PROTECT,
+        related_name="order_items",
+        verbose_name="Produto",
     )
-    # CORREÇÃO: era VARCHAR(45) → INT
-    quantity   = models.PositiveIntegerField("Quantidade", default=1)
-    # Preço no momento da compra (não muda se o produto mudar de preço)
+    quantity = models.PositiveIntegerField("Quantidade", default=1)
+    # Snapshot do preço: não muda se o produto mudar de preço depois
     unit_price = models.DecimalField(
-        "Preço unitário", max_digits=8, decimal_places=2,
-        help_text="Salvo no momento da compra. Não muda retroativamente."
+        "Preço unitário",
+        max_digits=8,
+        decimal_places=2,
+        help_text="Salvo no momento da compra. Não sofre alterações retroativas.",
     )
 
     class Meta:
@@ -38,5 +45,5 @@ class OrderItem(models.Model):
 
     @property
     def subtotal(self):
-        """Subtotal do item: quantity × unit_price"""
+        """Subtotal calculado: quantity × unit_price."""
         return self.quantity * self.unit_price

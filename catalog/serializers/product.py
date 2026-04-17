@@ -1,24 +1,35 @@
+# catalog/serializers/product.py
+
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from ..models import Product
+from ..models import Flavor, Product
 from .category import CategorySerializer
+
+
+# ── FlavorSerializer (somente leitura, embutido no produto) ───────────────────
+class FlavorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Flavor
+        fields = ["id", "name", "slug"]
 
 
 # ── Serializer público (vitrine) ──────────────────────────────────────────────
 class ProductSerializer(serializers.ModelSerializer):
     """
     Retornado para qualquer usuário (inclusive anônimo).
-    NÃO expõe cost_price nem margens — dados exclusivos do admin.
+    NÃO expõe cost_price nem margens.
     """
     category = CategorySerializer(read_only=True)
+    flavor = FlavorSerializer(read_only=True)        # ← objeto, não ID
     image_url = serializers.SerializerMethodField()
     is_in_stock = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Product
         fields = [
-            "id", "name", "slug", "description", "flavor",
+            "id", "name", "slug", "description",
+            "flavor",                                     # ← {id, name, slug}
             "category", "price",
             "image_url", "is_in_stock", "stock",
             "is_active", "is_featured",
@@ -39,23 +50,21 @@ class ProductSerializer(serializers.ModelSerializer):
 class ProductAdminSerializer(serializers.ModelSerializer):
     """
     Retornado somente para is_staff=True.
-    Inclui cost_price, gross_margin_pct e gross_profit para os relatórios.
+    Inclui cost_price, margens e campos de escrita.
     """
     category_name = serializers.CharField(source="category.name", read_only=True)
     category_slug = serializers.CharField(source="category.slug", read_only=True)
+    flavor = FlavorSerializer(read_only=True)   # ← objeto, não ID
     image_url = serializers.SerializerMethodField()
     is_in_stock = serializers.BooleanField(read_only=True)
-    gross_margin_pct = serializers.DecimalField(
-        max_digits=5, decimal_places=2, read_only=True
-    )
-    gross_profit = serializers.DecimalField(
-        max_digits=8, decimal_places=2, read_only=True
-    )
+    gross_margin_pct = serializers.DecimalField(max_digits=5, decimal_places=2, read_only=True)
+    gross_profit = serializers.DecimalField(max_digits=8, decimal_places=2, read_only=True)
 
     class Meta:
         model = Product
         fields = [
-            "id", "name", "slug", "description", "flavor",
+            "id", "name", "slug", "description",
+            "flavor",                                     # ← {id, name, slug}
             "category", "category_name", "category_slug",
             "price", "cost_price",
             "gross_margin_pct", "gross_profit",
@@ -79,12 +88,13 @@ class ProductAdminSerializer(serializers.ModelSerializer):
 class ProductWriteSerializer(serializers.ModelSerializer):
     """
     Usado pelo admin para criar e editar produtos.
-    Aceita category como PK inteira.
+    flavor e category recebem PKs inteiras (padrão de escrita do DRF).
     """
     class Meta:
         model = Product
         fields = [
-            "name", "description", "flavor",
+            "name", "description",
+            "flavor",              # ← aceita ID inteiro (PK) na escrita
             "category", "price", "cost_price",
             "image", "stock", "is_active", "is_featured",
         ]

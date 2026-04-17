@@ -1,17 +1,18 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Category, Product
+
+from .models import Category, Flavor, Product
 
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    list_display        = ["name", "slug", "is_active", "order", "product_count", "updated_at"]
-    list_editable       = ["is_active", "order"]
-    list_filter         = ["is_active"]
-    search_fields       = ["name", "slug"]
+    list_display = ["name", "slug", "is_active", "order", "product_count", "updated_at"]
+    list_editable = ["is_active", "order"]
+    list_filter = ["is_active"]
+    search_fields = ["name", "slug"]
     prepopulated_fields = {"slug": ("name",)}
-    readonly_fields     = ["created_at", "updated_at"]
-    ordering            = ["order", "name"]
+    readonly_fields = ["created_at", "updated_at"]
+    ordering = ["order", "name"]
 
     @admin.display(description="Produtos")
     def product_count(self, obj):
@@ -19,8 +20,8 @@ class CategoryAdmin(admin.ModelAdmin):
 
 
 class StockStatusFilter(admin.SimpleListFilter):
-    title            = "Estoque"
-    parameter_name   = "stock_status"
+    title = "Estoque"
+    parameter_name = "stock_status"
 
     def lookups(self, request, model_admin):
         return [("in", "Em estoque"), ("out", "Sem estoque")]
@@ -35,18 +36,19 @@ class StockStatusFilter(admin.SimpleListFilter):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display        = [
+    list_display = [
         "thumbnail", "name", "category", "price", "cost_price",
         "margin_display", "stock", "is_active", "is_featured", "updated_at",
     ]
-    list_editable       = ["price", "stock", "is_active", "is_featured"]
-    list_filter         = ["is_active", "is_featured", "category", StockStatusFilter]
-    search_fields       = ["name", "description", "slug", "flavor"]
+    list_editable = ["price", "stock", "is_active", "is_featured"]
+    list_filter = ["is_active", "is_featured", "category", StockStatusFilter]
+    search_fields = ["name", "description", "slug", "flavor"]
     prepopulated_fields = {"slug": ("name",)}
-    readonly_fields     = ["margin_display", "created_at", "updated_at"]
+    readonly_fields = ["margin_display", "created_at", "updated_at"]
     autocomplete_fields = ["category"]
-    ordering            = ["-is_featured", "name"]
-    list_per_page       = 25
+    ordering = ["-is_featured", "name"]
+    list_per_page = 25
+    MINIMUM_HEALTHY_MARGIN_PCT = 30
 
     fieldsets = [
         ("Identificação", {
@@ -80,5 +82,15 @@ class ProductAdmin(admin.ModelAdmin):
         m = obj.gross_margin_pct
         if m is None:
             return "—"
-        cor = "#2e7d32" if m >= 30 else "#e65100"
+        cor = "#2e7d32" if m >= self.MINIMUM_HEALTHY_MARGIN_PCT else "#e65100"
         return format_html('<b style="color:{}">{} %</b>', cor, m)
+
+
+@admin.register(Flavor)
+class FlavorAdmin(admin.ModelAdmin):
+    list_display = ["name", "slug", "is_active", "updated_at"]
+    list_editable = ["is_active"]
+    search_fields = ["name", "slug"]
+    prepopulated_fields = {"slug": ("name",)}
+    readonly_fields = ["created_at", "updated_at"]
+    ordering = ["name"]

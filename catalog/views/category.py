@@ -1,11 +1,11 @@
-from rest_framework import viewsets, filters
+from drf_spectacular.utils import extend_schema, extend_schema_view
+from rest_framework import filters, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema, extend_schema_view
 
 from ..models import Category
-from ..serializers import CategorySerializer, CategoryWriteSerializer, ProductSerializer
 from ..permissions import IsAdminOrReadOnly
+from ..serializers import CategorySerializer, CategoryWriteSerializer, ProductSerializer
 
 
 @extend_schema_view(
@@ -24,13 +24,13 @@ class CategoryViewSet(viewsets.ModelViewSet):
     PATCH  /api/categories/{slug}/           → editar (admin)
     DELETE /api/categories/{slug}/           → remover (admin)
     """
-    queryset             = Category.objects.all()
-    permission_classes   = [IsAdminOrReadOnly]
-    lookup_field         = "slug"
-    filter_backends      = [filters.OrderingFilter]
-    ordering_fields      = ["order", "name", "created_at"]
-    ordering             = ["order", "name"]
-    http_method_names    = ["get", "post", "patch", "delete", "head", "options"]
+    queryset = Category.objects.all()
+    permission_classes = [IsAdminOrReadOnly]
+    lookup_field = "slug"
+    filter_backends = [filters.OrderingFilter]
+    ordering_fields = ["order", "name", "created_at"]
+    ordering = ["order", "name"]
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -39,7 +39,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
         return qs
 
     def get_serializer_class(self):
-        if self.request.method in ("POST", "PATCH"):
+        if self.request.method in {"POST", "PATCH"}:
             return CategoryWriteSerializer
         return CategorySerializer
 

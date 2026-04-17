@@ -1,25 +1,30 @@
 """
 catalog/models/product.py
-
-Tabela: produto — corrigida conforme revisão da modelagem:
-  - estoque: INT (era VARCHAR → bug em cálculos)
-  - preco_custo: adicionado (obrigatório para relatórios de margem)
-  - slug: adicionado (obrigatório para URLs e API)
-  - destaque / ativo: controle de visibilidade sem deletar
-  - created_at / updated_at: rastreabilidade
 """
 from decimal import Decimal
+
 from django.db import models
 from django.utils.text import slugify
+
 from .category import Category
+from .flavor import Flavor
 
 
 class Product(models.Model):
     category = models.ForeignKey(
         Category,
-        on_delete=models.PROTECT,      # PROTECT: impede deletar categoria com produtos
+        on_delete=models.PROTECT,
         related_name="products",
         verbose_name="Categoria",
+    )
+    flavor = models.ForeignKey(
+        Flavor,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="products",
+        verbose_name="Sabor",
+        help_text="Sabor principal do produto. Deixe em branco se não se aplica.",
     )
     name = models.CharField("Nome", max_length=150)
     slug = models.SlugField(
@@ -30,14 +35,8 @@ class Product(models.Model):
         help_text="Gerado automaticamente. Usado em URLs como /produto/cookie-classico/",
     )
     description = models.TextField("Descrição", blank=True)
-    flavor = models.CharField(
-        "Sabor / variação",
-        max_length=100,
-        blank=True,
-        help_text="Ex: Chocolate, Red Velvet, Nutella. Opcional.",
-    )
 
-    # ── Financeiro ─────────────────────────────────────────────
+    # ── Financeiro ────────────────────────────────────────────
     price = models.DecimalField(
         "Preço de venda",
         max_digits=8,
@@ -50,11 +49,12 @@ class Product(models.Model):
         decimal_places=2,
         null=True,
         blank=True,
-        help_text="Custo de produção por unidade. Visível apenas no admin. "
-                  "Usado para calcular margem bruta e lucro.",
+        help_text="Custo de produção por unidade. Visível apenas no admin.",
     )
 
-    # ── Imagem (Cloudinary em produção) ────────────────────────
+    # ── Imagem ────────────────────────────────────────────────
+    # Decisão: 1 imagem por produto no MVP.
+    # Para múltiplas imagens: criar ProductImage(FK→Product, image, order).
     image = models.ImageField(
         "Imagem",
         upload_to="products/",
@@ -62,38 +62,28 @@ class Product(models.Model):
         blank=True,
     )
 
-    # ── Estoque ────────────────────────────────────────────────
-    # CORREÇÃO: era VARCHAR(100) na modelagem original → INT correto
+    # ── Estoque ───────────────────────────────────────────────
     stock = models.PositiveIntegerField(
         "Estoque",
         default=0,
-        help_text="Unidades disponíveis. Decrementado automaticamente a cada pedido.",
+        help_text="Unidades disponíveis. Decrementado automaticamente via signal.",
     )
 
-    # ── Visibilidade ───────────────────────────────────────────
-    is_active = models.BooleanField(
-        "Ativo",
-        default=True,
-        help_text="Desativar oculta o produto da vitrine sem excluí-lo.",
-    )
-    is_featured = models.BooleanField(
-        "Em destaque",
-        default=False,
-        help_text="Produtos em destaque aparecem primeiro na Home.",
-    )
+    # ── Visibilidade ──────────────────────────────────────────
+    is_active   = models.BooleanField("Ativo",       default=True)
+    is_featured = models.BooleanField("Em destaque", default=False)
 
-    created_at = models.DateTimeField("Criado em", auto_now_add=True)
+    created_at = models.DateTimeField("Criado em",     auto_now_add=True)
     updated_at = models.DateTimeField("Atualizado em", auto_now=True)
 
     class Meta:
-        verbose_name = "Produto"
+        verbose_name        = "Produto"
         verbose_name_plural = "Produtos"
-        ordering = ["-is_featured", "name"]
+        ordering            = ["-is_featured", "name"]
 
     def __str__(self):
         return f"{self.name} — {self.category.name}"
 
-    # ── Slug único automático ──────────────────────────────────
     def save(self, *args, **kwargs):
         if not self.slug:
             base = slugify(self.name)
@@ -104,15 +94,13 @@ class Product(models.Model):
             self.slug = slug
         super().save(*args, **kwargs)
 
-    # ── Propriedades calculadas (sem hit extra no banco) ───────
+    # ── Propriedades calculadas ───────────────────────────────
     @property
     def is_in_stock(self) -> bool:
-        """True se estoque > 0"""
         return self.stock > 0
 
     @property
     def gross_margin_pct(self) -> Decimal | None:
-        """Margem bruta %: (venda - custo) / venda × 100"""
         if self.cost_price is not None and self.price > 0:
             return ((self.price - self.cost_price) / self.price * 100).quantize(
                 Decimal("0.01")
@@ -121,7 +109,6 @@ class Product(models.Model):
 
     @property
     def gross_profit(self) -> Decimal | None:
-        """Lucro bruto por unidade: preço_venda - preço_custo"""
         if self.cost_price is not None:
             return self.price - self.cost_price
         return None

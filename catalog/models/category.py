@@ -22,8 +22,6 @@ class Category(models.Model):
         help_text="Gerado automaticamente. Usado em URLs e no filtro ?category=slug da API.",
     )
     description = models.TextField("Descrição", blank=True)
-    # Em desenvolvimento → salva em MEDIA_ROOT/categories/
-    # Em produção        → Cloudinary (configurado pelo settings.py automaticamente)
     image = models.ImageField(
         "Imagem",
         upload_to="categories/",
@@ -44,15 +42,14 @@ class Category(models.Model):
     updated_at = models.DateTimeField("Atualizado em", auto_now=True)
 
     class Meta:
-        verbose_name = "Categoria"
+        verbose_name        = "Categoria"
         verbose_name_plural = "Categorias"
-        ordering = ["order", "name"]
+        ordering            = ["order", "name"]
 
     def __str__(self):
         return self.name
 
     def save(self, *args, **kwargs):
-        # Gera o slug apenas na criação (nunca sobrescreve slug existente)
         if not self.slug:
             self.slug = slugify(self.name)
         super().save(*args, **kwargs)
