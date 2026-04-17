@@ -1,5 +1,6 @@
-from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
+from rest_framework import serializers
+
 from ..models import Product
 from .category import CategorySerializer
 
@@ -10,12 +11,12 @@ class ProductSerializer(serializers.ModelSerializer):
     Retornado para qualquer usuário (inclusive anônimo).
     NÃO expõe cost_price nem margens — dados exclusivos do admin.
     """
-    category  = CategorySerializer(read_only=True)
+    category = CategorySerializer(read_only=True)
     image_url = serializers.SerializerMethodField()
     is_in_stock = serializers.BooleanField(read_only=True)
 
     class Meta:
-        model  = Product
+        model = Product
         fields = [
             "id", "name", "slug", "description", "flavor",
             "category", "price",
@@ -40,19 +41,19 @@ class ProductAdminSerializer(serializers.ModelSerializer):
     Retornado somente para is_staff=True.
     Inclui cost_price, gross_margin_pct e gross_profit para os relatórios.
     """
-    category_name   = serializers.CharField(source="category.name", read_only=True)
-    category_slug   = serializers.CharField(source="category.slug", read_only=True)
-    image_url       = serializers.SerializerMethodField()
-    is_in_stock     = serializers.BooleanField(read_only=True)
+    category_name = serializers.CharField(source="category.name", read_only=True)
+    category_slug = serializers.CharField(source="category.slug", read_only=True)
+    image_url = serializers.SerializerMethodField()
+    is_in_stock = serializers.BooleanField(read_only=True)
     gross_margin_pct = serializers.DecimalField(
         max_digits=5, decimal_places=2, read_only=True
     )
-    gross_profit    = serializers.DecimalField(
+    gross_profit = serializers.DecimalField(
         max_digits=8, decimal_places=2, read_only=True
     )
 
     class Meta:
-        model  = Product
+        model = Product
         fields = [
             "id", "name", "slug", "description", "flavor",
             "category", "category_name", "category_slug",
@@ -81,7 +82,7 @@ class ProductWriteSerializer(serializers.ModelSerializer):
     Aceita category como PK inteira.
     """
     class Meta:
-        model  = Product
+        model = Product
         fields = [
             "name", "description", "flavor",
             "category", "price", "cost_price",
@@ -99,7 +100,7 @@ class ProductWriteSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, attrs):
-        price      = attrs.get("price")
+        price = attrs.get("price")
         cost_price = attrs.get("cost_price")
         if price and cost_price and cost_price >= price:
             raise serializers.ValidationError(

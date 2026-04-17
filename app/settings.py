@@ -110,7 +110,7 @@ FILE_UPLOAD_PERMISSIONS = 0o640
 # ── Storage e MEDIA_URL separados por ambiente ───────────────────────────────
 if MODE == 'DEVELOPMENT':
     MY_IP = os.getenv('MY_IP', '127.0.0.1')
-    MEDIA_URL = f'http://{MY_IP}:8000/media/'
+    MEDIA_URL = '/media/'
     # Storage local — sem Cloudinary
     STORAGES = {
         'default': {
