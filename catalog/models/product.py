@@ -70,16 +70,16 @@ class Product(models.Model):
     )
 
     # ── Visibilidade ──────────────────────────────────────────
-    is_active   = models.BooleanField("Ativo",       default=True)
+    is_active = models.BooleanField("Ativo", default=True)
     is_featured = models.BooleanField("Em destaque", default=False)
 
-    created_at = models.DateTimeField("Criado em",     auto_now_add=True)
+    created_at = models.DateTimeField("Criado em", auto_now_add=True)
     updated_at = models.DateTimeField("Atualizado em", auto_now=True)
 
     class Meta:
-        verbose_name        = "Produto"
+        verbose_name = "Produto"
         verbose_name_plural = "Produtos"
-        ordering            = ["-is_featured", "name"]
+        ordering = ["-is_featured", "name"]
 
     def __str__(self):
         return f"{self.name} — {self.category.name}"

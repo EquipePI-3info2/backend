@@ -27,14 +27,14 @@ class Flavor(models.Model):
         help_text="Gerado automaticamente. Usado em filtros de API.",
     )
     description = models.TextField("Descrição", blank=True)
-    is_active   = models.BooleanField("Ativo", default=True)
-    created_at  = models.DateTimeField("Criado em", auto_now_add=True)
-    updated_at  = models.DateTimeField("Atualizado em", auto_now=True)
+    is_active = models.BooleanField("Ativo", default=True)
+    created_at = models.DateTimeField("Criado em", auto_now_add=True)
+    updated_at = models.DateTimeField("Atualizado em", auto_now=True)
 
     class Meta:
-        verbose_name        = "Sabor"
+        verbose_name = "Sabor"
         verbose_name_plural = "Sabores"
-        ordering            = ["name"]
+        ordering = ["name"]
 
     def __str__(self):
         return self.name
