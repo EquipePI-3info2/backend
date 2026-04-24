@@ -10,6 +10,7 @@ Sem alterações em relação à versão revisada — já estava correto:
 from django.db import models
 
 from catalog.models import Product
+
 from .order import Order
 
 
@@ -36,9 +37,9 @@ class OrderItem(models.Model):
     )
 
     class Meta:
-        verbose_name        = "Item do pedido"
+        verbose_name = "Item do pedido"
         verbose_name_plural = "Itens do pedido"
-        unique_together     = [["order", "product"]]
+        unique_together = [["order", "product"]]
 
     def __str__(self):
         return f"{self.quantity}x {self.product.name} (Pedido {self.order.code})"
