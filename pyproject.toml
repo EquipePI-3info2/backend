@@ -3,6 +3,8 @@ name = "brookie"
 version = "1.0.0"
 description = "E-commerce de cookies e brownies artesanais — Brookiê."
 authors = [{ name = "Arthur Lanznaster" }]
+requires-python = "==3.12.*"
+license = { text = "MIT" }
 dependencies = [
   'dj-database-url>=2.1.0',
   'django-cors-headers>=4.3.0',
@@ -24,14 +26,13 @@ dependencies = [
   'uvicorn>=0.29.0',
   'whitenoise[brotli]>=6.6.0',
 ]
+
 [project.optional-dependencies]
 cloudinary = [
   'django-cloudinary-storage>=0.3.0',
   'cloudinary>=1.44.0',
 ]
 
-requires-python = ">=3.12"
-license = { text = "MIT" }
 
 [dependency-groups]
 dev = [
@@ -39,6 +40,7 @@ dev = [
   'ipython>=8.26.0',
   'ruff>=0.11.2',
 ]
+
 
 [tool.pdm.scripts]
 pre_dev = 'python ./scripts/set_my_ip.py'
@@ -57,21 +59,26 @@ check = 'ruff check'
 pre_format = 'ruff check --fix'
 format = 'ruff format'
 
+
 [tool.pdm]
 distribution = false
 
+
 # [[tool.pdm.autoexport]]
-#filename = 'requirements.txt'
-#without-hashes = true
+# filename = 'requirements.txt'
+# without-hashes = true
+
 
 [tool.ruff]
 line-length = 120
 extend-exclude = ['migrations', '__init__.py', 'manage.py']
 
+
 [tool.ruff.lint]
 preview = true
 select = ['I', 'F', 'E', 'W', 'PL', 'PT']
 ignore = ['PLR6301']
+
 
 [tool.ruff.format]
 preview = true
