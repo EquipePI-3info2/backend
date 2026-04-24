@@ -1,7 +1,13 @@
 """
-Database models.
-"""
+core/models/user.py
 
+Usuário customizado. Login via e-mail.
+
+Ajustes vs versão anterior:
+  - name: blank=True, null=True → blank=False, null=False (campo obrigatório)
+  - telefone adicionado (usado no checkout e no painel admin)
+  - created_at / updated_at adicionados (rastreabilidade)
+"""
 from django.contrib.auth.models import (
     AbstractBaseUser,
     BaseUserManager,
@@ -12,53 +18,67 @@ from django.utils.translation import gettext_lazy as _
 
 
 class UserManager(BaseUserManager):
-    """Manager for users."""
-
     use_in_migrations = True
 
     def create_user(self, email, password=None, **extra_fields):
-        """Create, save and return a new user."""
         if not email:
-            raise ValueError('Users must have an email address.')
-
+            raise ValueError("Users must have an email address.")
         user = self.model(email=self.normalize_email(email), **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
-
         return user
 
     def create_superuser(self, email, password):
-        """Create, save and return a new superuser."""
         user = self.create_user(email, password)
         user.is_staff = True
         user.is_superuser = True
         user.save(using=self._db)
-
         return user
 
 
 class User(AbstractBaseUser, PermissionsMixin):
-    """User model in the system."""
+    """Usuário do sistema. Login via e-mail."""
 
-    email = models.EmailField(max_length=255, unique=True, verbose_name=_('email'), help_text=_('Email'))
-    name = models.CharField(max_length=255, verbose_name=_('name'), help_text=_('Username'))
-    telefone = models.CharField(max_length=20)
+    email = models.EmailField(
+        _("e-mail"),
+        max_length=255,
+        unique=True,
+        help_text=_("Endereço de e-mail. Usado como login."),
+    )
+    name = models.CharField(
+        _("nome completo"),
+        max_length=255,
+        help_text=_("Nome completo do usuário."),
+    )
+    telefone = models.CharField(
+        _("telefone"),
+        max_length=20,
+        blank=True,
+        default="",
+        help_text=_("Telefone para contato (opcional). Ex: (47) 99999-0000."),
+    )
     is_active = models.BooleanField(
-        default=True, verbose_name=_('Usuário está ativo'), help_text=_('Indica que este usuário está ativo.')
+        _("ativo"),
+        default=True,
+        help_text=_("Indica que este usuário está ativo."),
     )
     is_staff = models.BooleanField(
+        _("equipe"),
         default=False,
-        verbose_name=_('Usuário é da equipe'),
-        help_text=_('Indica que este usuário pode acessar o Admin.'),
+        help_text=_("Indica que este usuário pode acessar o painel admin."),
     )
+    created_at = models.DateTimeField(_("criado em"), auto_now_add=True)
+    updated_at = models.DateTimeField(_("atualizado em"), auto_now=True)
 
     objects = UserManager()
 
-    USERNAME_FIELD = 'email'
+    USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
 
     class Meta:
-        """Meta options for the model."""
+        verbose_name = "Usuário"
+        verbose_name_plural = "Usuários"
+        ordering = ["name"]
 
-        verbose_name = 'Usuário'
-        verbose_name_plural = 'Usuários'
+    def __str__(self):
+        return f"{self.name} <{self.email}>"
