@@ -7,14 +7,18 @@ Ajustes vs versão anterior:
   - name: blank=True, null=True → blank=False, null=False (campo obrigatório)
   - telefone adicionado (usado no checkout e no painel admin)
   - created_at / updated_at adicionados (rastreabilidade)
+  - profile_photo adicionado (foto de perfil — admin e cliente)
 """
 from django.contrib.auth.models import (
     AbstractBaseUser,
     BaseUserManager,
     PermissionsMixin,
 )
+from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+
+from core.validators import validate_image_size
 
 
 class UserManager(BaseUserManager):
@@ -56,6 +60,20 @@ class User(AbstractBaseUser, PermissionsMixin):
         blank=True,
         default="",
         help_text=_("Telefone para contato (opcional). Ex: (47) 99999-0000."),
+    )
+    profile_photo = models.ImageField(
+        _("foto de perfil"),
+        upload_to="users/avatars/",
+        null=True,
+        blank=True,
+        validators=[
+            FileExtensionValidator(allowed_extensions=["jpg", "jpeg", "png", "webp"]),
+            validate_image_size,
+        ],
+        help_text=_(
+            "Foto de perfil do usuário (opcional). "
+            "Formatos aceitos: JPG, PNG, WEBP. Máx. 5MB."
+        ),
     )
     is_active = models.BooleanField(
         _("ativo"),
