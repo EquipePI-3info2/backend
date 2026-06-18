@@ -16,6 +16,7 @@ class UserSerializer(ModelSerializer):
             'telefone',
             'is_active',
             'is_staff',
+            'created_at',
             'profile_photo_url',
         ]
         read_only_fields = ['id', 'is_active', 'is_staff']
