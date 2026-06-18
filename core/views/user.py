@@ -13,6 +13,7 @@ from core.serializers import (
     ProfilePhotoSerializer,
     UserRegistrationSerializer,
     UserSerializer,
+    UserUpdateSerializer,
 )
 
 
@@ -22,7 +23,7 @@ class UserViewSet(ModelViewSet):
 
     - Administradores (is_staff=True) têm acesso a todos os usuários.
     - Usuários comuns só conseguem ver/editar/excluir o próprio registro.
-    - Criação de usuário por este endpoint é restrita a admins
+    - Criação via este endpoint é restrita a admins
       (cadastro público continua em /api/registro/).
     """
 
@@ -31,41 +32,49 @@ class UserViewSet(ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-
         if user.is_staff:
             return User.objects.all().order_by('id')
-
         return User.objects.filter(pk=user.pk).order_by('id')
 
     def get_permissions(self):
         if self.action == 'create':
             return [IsAuthenticated(), IsAdminUser()]
-
         return super().get_permissions()
 
+    # ── /me/ ─────────────────────────────────────────────────────────────────
+
     @extend_schema(
-        summary='Dados do usuário autenticado',
-        description='Retorna os dados do usuário autenticado.',
+        summary="Dados do usuário autenticado",
+        description="GET retorna os dados; PATCH atualiza nome e telefone.",
         responses={200: UserSerializer, 401: None},
     )
     @action(
         detail=False,
-        methods=['get'],
+        methods=['get', 'patch'],
         permission_classes=[IsAuthenticated],
     )
     def me(self, request):
-        """Retorna os dados do usuário autenticado."""
+        """GET → dados do usuário. PATCH → atualiza nome e/ou telefone."""
+        user = request.user
 
-        serializer = UserSerializer(
-            request.user,
-            context={'request': request},
-        )
+        if request.method == 'PATCH':
+            serializer = UserUpdateSerializer(user, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            # Retorna o UserSerializer completo (com URL da foto, created_at, etc.)
+            return Response(
+                UserSerializer(user, context={'request': request}).data,
+                status=status.HTTP_200_OK,
+            )
 
+        serializer = UserSerializer(user, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    # ── /me/foto/ ─────────────────────────────────────────────────────────────
+
     @extend_schema(
-        summary='Upload da foto de perfil',
-        description='Envia (PATCH) ou remove (DELETE) a foto de perfil do usuário autenticado.',
+        summary="Upload da foto de perfil",
+        description="PATCH envia nova foto; DELETE remove a foto atual.",
         request=ProfilePhotoSerializer,
         responses={200: UserSerializer, 400: None},
     )
@@ -78,46 +87,30 @@ class UserViewSet(ModelViewSet):
     )
     def foto(self, request):
         """Upload ou substituição da foto de perfil do usuário autenticado."""
-
         user = request.user
-
-        serializer = ProfilePhotoSerializer(
-            user,
-            data=request.data,
-            partial=True,
-        )
-
+        serializer = ProfilePhotoSerializer(user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
 
+        # Remove a foto antiga do storage (Cloudinary ou disco) antes de salvar
         if user.profile_photo:
             user.profile_photo.delete(save=False)
 
         serializer.save()
-
         return Response(
-            UserSerializer(
-                user,
-                context={'request': request},
-            ).data,
+            UserSerializer(user, context={'request': request}).data,
             status=status.HTTP_200_OK,
         )
 
     @foto.mapping.delete
     def remover_foto(self, request):
         """Remove a foto de perfil do usuário autenticado."""
-
         user = request.user
-
         if user.profile_photo:
             user.profile_photo.delete(save=False)
             user.profile_photo = None
             user.save(update_fields=['profile_photo'])
-
         return Response(
-            UserSerializer(
-                user,
-                context={'request': request},
-            ).data,
+            UserSerializer(user, context={'request': request}).data,
             status=status.HTTP_200_OK,
         )
 
