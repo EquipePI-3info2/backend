@@ -22,11 +22,11 @@ from catalog.models import Product
 class StockMovement(models.Model):
 
     class MovementType(models.TextChoices):
-        IN         = "in",         "Entrada (compra / reposição)"
-        OUT        = "out",        "Saída (venda)"
+        IN = "in", "Entrada (compra / reposição)"
+        OUT = "out", "Saída (venda)"
         ADJUSTMENT = "adjustment", "Ajuste manual"
-        LOSS       = "loss",       "Perda / descarte"
-        RETURN     = "return",     "Devolução de cliente"
+        LOSS = "loss", "Perda / descarte"
+        RETURN = "return", "Devolução de cliente"
 
     product = models.ForeignKey(
         Product,
@@ -54,13 +54,13 @@ class StockMovement(models.Model):
         "Quantidade",
         help_text="Sempre positivo. O tipo determina se entra ou sai do estoque.",
     )
-    reason     = models.CharField("Motivo",       max_length=250, blank=True)
+    reason = models.CharField("Motivo", max_length=250, blank=True)
     created_at = models.DateTimeField("Registrado em", auto_now_add=True)
 
     class Meta:
-        verbose_name        = "Movimentação de estoque"
+        verbose_name = "Movimentação de estoque"
         verbose_name_plural = "Movimentações de estoque"
-        ordering            = ["-created_at"]
+        ordering = ["-created_at"]
 
     def __str__(self):
         return (
