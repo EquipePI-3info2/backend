@@ -5,12 +5,31 @@ from core.models import User
 
 
 class UserSerializer(ModelSerializer):
+    profile_photo_url = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ['id', 'email', 'name', 'telefone', 'is_active', 'is_staff', 'profile_photo']
-        # is_active/is_staff só podem ser alterados pelo Django Admin,
-        # nunca via API — evita escalonamento de privilégio por um cliente.
+        fields = [
+            'id',
+            'email',
+            'name',
+            'telefone',
+            'is_active',
+            'is_staff',
+            'profile_photo_url',
+        ]
         read_only_fields = ['id', 'is_active', 'is_staff']
+
+    def get_profile_photo_url(self, obj):
+        request = self.context.get('request')
+
+        if not obj.profile_photo:
+            return None
+
+        if request:
+            return request.build_absolute_uri(obj.profile_photo.url)
+
+        return obj.profile_photo.url
 
 
 class UserRegistrationSerializer(ModelSerializer):
