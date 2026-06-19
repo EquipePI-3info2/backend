@@ -25,6 +25,7 @@ dependencies = [
   'setuptools>=68.2.2',
   'uvicorn>=0.29.0',
   'whitenoise[brotli]>=6.6.0',
+  "django-cloudinary-storage>=0.3.0",
 ]
 
 [project.optional-dependencies]
@@ -45,16 +46,24 @@ dev = [
 [tool.pdm.scripts]
 pre_dev = 'python ./scripts/set_my_ip.py'
 dev = 'python manage.py runserver 127.0.0.1:8000'
+
 createsuperuser = 'python manage.py createsuperuser'
+
 pre_migrate = 'python manage.py makemigrations'
 migrate = 'python manage.py migrate'
-post_migrate = 'python manage.py graph_models -S -g -o core.png core'
+
+diagram = 'python manage.py graph_models -S -g -o core.png core'
+
 shell = 'python manage.py shell'
 shellp = 'python manage.py shell_plus'
+
 test = 'python manage.py test'
+
 loaddata = 'python manage.py loaddata core.json'
 dumpdata = 'python manage.py dumpdata --indent 2'
+
 cria_api = 'python ./scripts/cria_api.py {args}'
+
 check = 'ruff check'
 pre_format = 'ruff check --fix'
 format = 'ruff format'

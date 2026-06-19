@@ -5,9 +5,29 @@ from core.models import User
 
 
 class UserSerializer(ModelSerializer):
+    profile_photo_url = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ['id', 'email', 'name', 'telefone', 'is_active']
+        fields = [
+            'id',
+            'email',
+            'name',
+            'telefone',
+            'is_active',
+            'is_staff',
+            'profile_photo_url',
+            'created_at',
+        ]
+        read_only_fields = ['id', 'is_active', 'is_staff', 'created_at']
+
+    def get_profile_photo_url(self, obj):
+        if not obj.profile_photo:
+            return None
+        request = self.context.get('request')
+        if request:
+            return request.build_absolute_uri(obj.profile_photo.url)
+        return obj.profile_photo.url
 
 
 class UserRegistrationSerializer(ModelSerializer):
@@ -19,3 +39,26 @@ class UserRegistrationSerializer(ModelSerializer):
 
     def create(self, validated_data):
         return User.objects.create_user(**validated_data)
+
+
+class ProfilePhotoSerializer(ModelSerializer):
+    """
+    Serializer dedicado ao upload/remoção da foto de perfil.
+    Isolado para que o endpoint de foto não exponha os demais campos.
+    """
+
+    class Meta:
+        model = User
+        fields = ['profile_photo']
+
+
+class UserUpdateSerializer(ModelSerializer):
+    """
+    Serializer para atualização de nome e telefone via PATCH /api/usuarios/me/.
+    Só expõe os campos que o próprio usuário pode editar — email e permissões
+    jamais são alterados por este endpoint.
+    """
+
+    class Meta:
+        model = User
+        fields = ['name', 'telefone']
