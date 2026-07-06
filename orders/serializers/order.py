@@ -1,3 +1,4 @@
+from django.db.models import Sum
 from rest_framework import serializers
 
 from orders.models import Order
@@ -12,7 +13,10 @@ class OrderSerializer(serializers.ModelSerializer):
         read_only=True,
     )
 
-    status_display = serializers.SerializerMethodField()
+    status_display = serializers.CharField(
+        source="get_status_display",
+        read_only=True,
+    )
 
     total_items = serializers.SerializerMethodField()
 
@@ -43,8 +47,10 @@ class OrderSerializer(serializers.ModelSerializer):
 
         read_only_fields = fields
 
-    def get_status_display(self, obj):
-        return obj.get_status_display()
-
     def get_total_items(self, obj):
-        return sum(item.quantity for item in obj.items.all())
+        return (
+            obj.items.aggregate(
+                total=Sum("quantity")
+            )["total"]
+            or 0
+        )

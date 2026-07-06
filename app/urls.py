@@ -33,6 +33,7 @@ urlpatterns = [
     path("api/token/verify/", TokenVerifyView.as_view(), name="token_verify"),
     path("api/registro/", UserRegistrationView.as_view(), name="user_registration"),
     path("api/", include(router.urls)),
+    path("api/", include("orders.urls")),
 ]
 
 if settings.DEBUG:
