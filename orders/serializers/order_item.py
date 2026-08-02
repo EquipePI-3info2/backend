@@ -32,11 +32,10 @@ class OrderItemSerializer(serializers.ModelSerializer):
     )
 
     subtotal = serializers.DecimalField(
-        source="subtotal",
-        max_digits=10,
-        decimal_places=2,
-        read_only=True,
-    )
+    max_digits=10,
+    decimal_places=2,
+    read_only=True,
+)
 
     class Meta:
         model = OrderItem

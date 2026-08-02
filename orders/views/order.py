@@ -32,6 +32,9 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     permission_classes = [IsAuthenticated]
 
+    # IMPORTANTE PARA O SWAGGER
+    queryset = Order.objects.none()
+
     http_method_names = [
         "get",
         "post",
@@ -42,6 +45,10 @@ class OrderViewSet(viewsets.ModelViewSet):
     ]
 
     def get_queryset(self):
+        # Quando o drf-spectacular gera o schema
+        if getattr(self, "swagger_fake_view", False):
+            return Order.objects.none()
+
         queryset = (
             Order.objects
             .select_related(
@@ -77,10 +84,6 @@ class OrderViewSet(viewsets.ModelViewSet):
         methods=["get"],
     )
     def me(self, request):
-        """
-        Lista apenas os pedidos do usuário autenticado.
-        """
-
         queryset = self.filter_queryset(
             self.get_queryset()
         )
@@ -109,10 +112,6 @@ class OrderViewSet(viewsets.ModelViewSet):
         methods=["get"],
     )
     def latest(self, request):
-        """
-        Retorna o pedido mais recente do usuário autenticado.
-        """
-
         order = self.get_queryset().first()
 
         if order is None:
