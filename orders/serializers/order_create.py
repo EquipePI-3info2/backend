@@ -1,23 +1,31 @@
-from django.db import transaction
-from django.db.models import F
 from rest_framework import serializers
 
 from catalog.models import Product
-from orders.models import Order, OrderItem
+from core.models import Address
+from orders.models import Order, Payment
+from orders.services import OrderServiceError, create_order
+
+from .order import OrderSerializer
 
 
 class OrderItemCreateSerializer(serializers.Serializer):
     product = serializers.PrimaryKeyRelatedField(
-        queryset=Product.objects.filter(is_active=True)
+        queryset=Product.objects.filter(is_active=True, category__is_active=True)
     )
-
-    quantity = serializers.IntegerField(
-        min_value=1
-    )
+    quantity = serializers.IntegerField(min_value=1)
 
 
 class OrderCreateSerializer(serializers.ModelSerializer):
-
+    address = serializers.PrimaryKeyRelatedField(
+        queryset=Address.objects.none(),
+        write_only=True,
+        required=False,
+        allow_null=True,
+    )
+    payment_method = serializers.ChoiceField(
+        choices=Payment.Method.choices,
+        write_only=True,
+    )
     items = OrderItemCreateSerializer(
         many=True,
         write_only=True,
@@ -27,74 +35,71 @@ class OrderCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = [
-            "delivery_address",
-            "delivery_city",
-            "delivery_state",
-            "delivery_zip",
+            "delivery_method",
+            "address",
             "delivery_notes",
-            "delivery_fee",
-            "discount",
+            "payment_method",
             "items",
         ]
 
-    def validate_items(self, items):
-        if not items:
-            raise serializers.ValidationError(
-                "O pedido deve possuir pelo menos um item."
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        request = self.context.get("request")
+        if request and request.user.is_authenticated:
+            self.fields["address"].queryset = Address.objects.filter(
+                user=request.user
             )
 
+    def validate_items(self, items):
         used_products = set()
-
         for item in items:
             product = item["product"]
-
             if product.pk in used_products:
                 raise serializers.ValidationError(
                     f"O produto '{product.name}' foi enviado mais de uma vez."
                 )
-
             if product.stock < item["quantity"]:
                 raise serializers.ValidationError(
                     f"Estoque insuficiente para '{product.name}'."
                 )
-
             used_products.add(product.pk)
-
         return items
 
-    @transaction.atomic
+    def validate(self, attrs):
+        method = attrs.get("delivery_method", Order.DeliveryMethod.DELIVERY)
+        address = attrs.get("address")
+        request = self.context["request"]
+
+        if not Address.objects.filter(user=request.user).exists():
+            raise serializers.ValidationError(
+                {"address": "Cadastre ao menos um endereço antes de realizar um pedido."}
+            )
+
+        if method == Order.DeliveryMethod.DELIVERY and address is None:
+            raise serializers.ValidationError(
+                {"address": "Selecione um endereço para o pedido com entrega."}
+            )
+        if method == Order.DeliveryMethod.PICKUP and address is not None:
+            raise serializers.ValidationError(
+                {"address": "Não envie endereço para retirada no local."}
+            )
+        return attrs
+
     def create(self, validated_data):
-
-        items = validated_data.pop("items")
-
-        order = Order.objects.create(
-            user=self.context["request"].user,
-            **validated_data,
-        )
-
-        order_items = []
-
-        for item in items:
-
-            product = item["product"]
-
-            order_items.append(
-                OrderItem(
-                    order=order,
-                    product=product,
-                    quantity=item["quantity"],
-                    unit_price=product.price,
-                )
+        try:
+            return create_order(
+                user=self.context["request"].user,
+                address=validated_data.pop("address", None),
+                delivery_method=validated_data.get(
+                    "delivery_method",
+                    Order.DeliveryMethod.DELIVERY,
+                ),
+                delivery_notes=validated_data.get("delivery_notes", ""),
+                payment_method=validated_data.pop("payment_method"),
+                items=validated_data.pop("items"),
             )
+        except OrderServiceError as exc:
+            raise serializers.ValidationError(str(exc)) from exc
 
-            Product.objects.filter(
-                pk=product.pk
-            ).update(
-                stock=F("stock") - item["quantity"]
-            )
-
-        OrderItem.objects.bulk_create(order_items)
-
-        order.recalculate_totals()
-
-        return order
+    def to_representation(self, instance):
+        return OrderSerializer(instance, context=self.context).data

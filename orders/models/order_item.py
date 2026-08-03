@@ -1,12 +1,4 @@
-"""
-orders/models/order_item.py
-
-Sem alterações em relação à versão revisada — já estava correto:
-  - quantity: PositiveIntegerField ✓
-  - unit_price: snapshot do preço no momento da compra ✓
-  - subtotal: property calculada (sem redundância) ✓
-  - unique_together [order, product]: evita duplicatas ✓
-"""
+from django.core.validators import MinValueValidator
 from django.db import models
 
 from catalog.models import Product
@@ -27,8 +19,11 @@ class OrderItem(models.Model):
         related_name="order_items",
         verbose_name="Produto",
     )
-    quantity = models.PositiveIntegerField("Quantidade", default=1)
-    # Snapshot do preço: não muda se o produto mudar de preço depois
+    quantity = models.PositiveIntegerField(
+        "Quantidade",
+        default=1,
+        validators=[MinValueValidator(1)],
+    )
     unit_price = models.DecimalField(
         "Preço unitário",
         max_digits=8,
@@ -39,12 +34,20 @@ class OrderItem(models.Model):
     class Meta:
         verbose_name = "Item do pedido"
         verbose_name_plural = "Itens do pedido"
-        unique_together = [["order", "product"]]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["order", "product"],
+                name="unique_product_per_order",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(quantity__gt=0),
+                name="order_item_quantity_greater_than_zero",
+            ),
+        ]
 
     def __str__(self):
         return f"{self.quantity}x {self.product.name} (Pedido {self.order.code})"
 
     @property
     def subtotal(self):
-        """Subtotal calculado: quantity × unit_price."""
         return self.quantity * self.unit_price
