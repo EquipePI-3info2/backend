@@ -1,0 +1,1972 @@
+openapi: 3.0.3
+info:
+  title: Brookiê API
+  version: 1.0.0
+  description: API do e-commerce Brookiê — cookies e brownies artesanais.
+paths:
+  /api/categories/:
+    get:
+      operationId: categories_list
+      description: |-
+        GET    /api/categories/                  → lista (público)
+        GET    /api/categories/{slug}/           → detalhe (público)
+        GET    /api/categories/{slug}/products/  → produtos da categoria (público)
+        POST   /api/categories/                  → criar (admin)
+        PATCH  /api/categories/{slug}/           → editar (admin)
+        DELETE /api/categories/{slug}/           → remover (admin)
+      summary: Listar categorias
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Qual campo usar ao ordenar os resultados.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: Um número de página dentro do conjunto de resultados paginado.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Número de resultados a serem retornados por página.
+        schema:
+          type: integer
+      tags:
+      - categories
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCategoryList'
+          description: ''
+    post:
+      operationId: categories_create
+      description: |-
+        GET    /api/categories/                  → lista (público)
+        GET    /api/categories/{slug}/           → detalhe (público)
+        GET    /api/categories/{slug}/products/  → produtos da categoria (público)
+        POST   /api/categories/                  → criar (admin)
+        PATCH  /api/categories/{slug}/           → editar (admin)
+        DELETE /api/categories/{slug}/           → remover (admin)
+      summary: Criar categoria [admin]
+      tags:
+      - categories
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CategoryWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CategoryWrite'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryWrite'
+          description: ''
+  /api/categories/{slug}/:
+    get:
+      operationId: categories_retrieve
+      description: |-
+        GET    /api/categories/                  → lista (público)
+        GET    /api/categories/{slug}/           → detalhe (público)
+        GET    /api/categories/{slug}/products/  → produtos da categoria (público)
+        POST   /api/categories/                  → criar (admin)
+        PATCH  /api/categories/{slug}/           → editar (admin)
+        DELETE /api/categories/{slug}/           → remover (admin)
+      summary: Detalhe da categoria
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+          description: Gerado automaticamente. Usado em URLs e no filtro ?category=slug
+            da API.
+        required: true
+      tags:
+      - categories
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+    patch:
+      operationId: categories_partial_update
+      description: |-
+        GET    /api/categories/                  → lista (público)
+        GET    /api/categories/{slug}/           → detalhe (público)
+        GET    /api/categories/{slug}/products/  → produtos da categoria (público)
+        POST   /api/categories/                  → criar (admin)
+        PATCH  /api/categories/{slug}/           → editar (admin)
+        DELETE /api/categories/{slug}/           → remover (admin)
+      summary: Editar categoria [admin]
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+          description: Gerado automaticamente. Usado em URLs e no filtro ?category=slug
+            da API.
+        required: true
+      tags:
+      - categories
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCategoryWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCategoryWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCategoryWrite'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryWrite'
+          description: ''
+    delete:
+      operationId: categories_destroy
+      description: |-
+        GET    /api/categories/                  → lista (público)
+        GET    /api/categories/{slug}/           → detalhe (público)
+        GET    /api/categories/{slug}/products/  → produtos da categoria (público)
+        POST   /api/categories/                  → criar (admin)
+        PATCH  /api/categories/{slug}/           → editar (admin)
+        DELETE /api/categories/{slug}/           → remover (admin)
+      summary: Remover categoria [admin]
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+          description: Gerado automaticamente. Usado em URLs e no filtro ?category=slug
+            da API.
+        required: true
+      tags:
+      - categories
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/categories/{slug}/products/:
+    get:
+      operationId: categories_products_retrieve
+      description: GET /api/categories/{slug}/products/
+      summary: Produtos desta categoria
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+          description: Gerado automaticamente. Usado em URLs e no filtro ?category=slug
+            da API.
+        required: true
+      tags:
+      - categories
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+  /api/orders/:
+    get:
+      operationId: orders_list
+      description: |-
+        CRUD de pedidos.
+
+        Administradores:
+            - possuem acesso a todos os pedidos.
+
+        Usuários comuns:
+            - visualizam apenas os próprios pedidos.
+      summary: Listar pedidos
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Qual campo usar ao ordenar os resultados.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: Um número de página dentro do conjunto de resultados paginado.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Número de resultados a serem retornados por página.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: Um termo de busca.
+        schema:
+          type: string
+      tags:
+      - orders
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedOrderList'
+          description: ''
+    post:
+      operationId: orders_create
+      description: |-
+        CRUD de pedidos.
+
+        Administradores:
+            - possuem acesso a todos os pedidos.
+
+        Usuários comuns:
+            - visualizam apenas os próprios pedidos.
+      summary: Criar pedido
+      tags:
+      - orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OrderCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OrderCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderCreate'
+          description: ''
+  /api/orders/{id}/:
+    get:
+      operationId: orders_retrieve
+      description: |-
+        CRUD de pedidos.
+
+        Administradores:
+            - possuem acesso a todos os pedidos.
+
+        Usuários comuns:
+            - visualizam apenas os próprios pedidos.
+      summary: Detalhes do pedido
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este Pedido.
+        required: true
+      tags:
+      - orders
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+    patch:
+      operationId: orders_partial_update
+      description: |-
+        CRUD de pedidos.
+
+        Administradores:
+            - possuem acesso a todos os pedidos.
+
+        Usuários comuns:
+            - visualizam apenas os próprios pedidos.
+      summary: Atualizar pedido
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este Pedido.
+        required: true
+      tags:
+      - orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedOrderUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedOrderUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedOrderUpdate'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderUpdate'
+          description: ''
+    delete:
+      operationId: orders_destroy
+      description: |-
+        CRUD de pedidos.
+
+        Administradores:
+            - possuem acesso a todos os pedidos.
+
+        Usuários comuns:
+            - visualizam apenas os próprios pedidos.
+      summary: Excluir pedido
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este Pedido.
+        required: true
+      tags:
+      - orders
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/orders/latest/:
+    get:
+      operationId: orders_latest_retrieve
+      description: |-
+        CRUD de pedidos.
+
+        Administradores:
+            - possuem acesso a todos os pedidos.
+
+        Usuários comuns:
+            - visualizam apenas os próprios pedidos.
+      summary: Último pedido do usuário
+      tags:
+      - orders
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+  /api/orders/me/:
+    get:
+      operationId: orders_me_retrieve
+      description: |-
+        CRUD de pedidos.
+
+        Administradores:
+            - possuem acesso a todos os pedidos.
+
+        Usuários comuns:
+            - visualizam apenas os próprios pedidos.
+      summary: Pedidos do usuário autenticado
+      tags:
+      - orders
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+  /api/products/:
+    get:
+      operationId: products_list
+      summary: Listar produtos
+      parameters:
+      - in: query
+        name: category
+        schema:
+          type: string
+      - in: query
+        name: in_stock
+        schema:
+          type: boolean
+      - in: query
+        name: is_featured
+        schema:
+          type: boolean
+      - name: ordering
+        required: false
+        in: query
+        description: Qual campo usar ao ordenar os resultados.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: Um número de página dentro do conjunto de resultados paginado.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Número de resultados a serem retornados por página.
+        schema:
+          type: integer
+      - in: query
+        name: price_max
+        schema:
+          type: number
+      - in: query
+        name: price_min
+        schema:
+          type: number
+      - name: search
+        required: false
+        in: query
+        description: Um termo de busca.
+        schema:
+          type: string
+      tags:
+      - products
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProductList'
+          description: ''
+    post:
+      operationId: products_create
+      summary: Criar produto [admin]
+      tags:
+      - products
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProductWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProductWrite'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductWrite'
+          description: ''
+  /api/products/{slug}/:
+    get:
+      operationId: products_retrieve
+      summary: Detalhe do produto
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+          description: Gerado automaticamente. Usado em URLs como /produto/cookie-classico/
+        required: true
+      tags:
+      - products
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+    patch:
+      operationId: products_partial_update
+      summary: Editar produto [admin]
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+          description: Gerado automaticamente. Usado em URLs como /produto/cookie-classico/
+        required: true
+      tags:
+      - products
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProductWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProductWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProductWrite'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductWrite'
+          description: ''
+    delete:
+      operationId: products_destroy
+      summary: Remover produto [admin]
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+          description: Gerado automaticamente. Usado em URLs como /produto/cookie-classico/
+        required: true
+      tags:
+      - products
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/registro/:
+    post:
+      operationId: registro_create
+      description: Endpoint para registro de novos usuários.
+      tags:
+      - registro
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegistration'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRegistration'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRegistration'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserRegistration'
+          description: ''
+  /api/schema/:
+    get:
+      operationId: schema_retrieve
+      description: |-
+        OpenApi3 schema for this API. Format can be selected via content negotiation.
+
+        - YAML: application/vnd.oai.openapi
+        - JSON: application/vnd.oai.openapi+json
+      parameters:
+      - in: query
+        name: format
+        schema:
+          type: string
+          enum:
+          - json
+          - yaml
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - af
+          - ar
+          - ar-dz
+          - ast
+          - az
+          - be
+          - bg
+          - bn
+          - br
+          - bs
+          - ca
+          - ckb
+          - cs
+          - cy
+          - da
+          - de
+          - dsb
+          - el
+          - en
+          - en-au
+          - en-gb
+          - eo
+          - es
+          - es-ar
+          - es-co
+          - es-mx
+          - es-ni
+          - es-ve
+          - et
+          - eu
+          - fa
+          - fi
+          - fr
+          - fy
+          - ga
+          - gd
+          - gl
+          - he
+          - hi
+          - hr
+          - hsb
+          - hu
+          - hy
+          - ia
+          - id
+          - ig
+          - io
+          - is
+          - it
+          - ja
+          - ka
+          - kab
+          - kk
+          - km
+          - kn
+          - ko
+          - ky
+          - lb
+          - lt
+          - lv
+          - mk
+          - ml
+          - mn
+          - mr
+          - ms
+          - my
+          - nb
+          - ne
+          - nl
+          - nn
+          - os
+          - pa
+          - pl
+          - pt
+          - pt-br
+          - ro
+          - ru
+          - sk
+          - sl
+          - sq
+          - sr
+          - sr-latn
+          - sv
+          - sw
+          - ta
+          - te
+          - tg
+          - th
+          - tk
+          - tr
+          - tt
+          - udm
+          - ug
+          - uk
+          - ur
+          - uz
+          - vi
+          - zh-hans
+          - zh-hant
+      tags:
+      - schema
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/vnd.oai.openapi:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/yaml:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/vnd.oai.openapi+json:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/token/:
+    post:
+      operationId: token_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenObtainPair'
+          description: ''
+  /api/token/refresh/:
+    post:
+      operationId: token_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/token/verify/:
+    post:
+      operationId: token_verify_create
+      description: |-
+        Takes a token and indicates if it is valid.  This view provides no
+        information about a token's fitness for a particular use.
+      tags:
+      - token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenVerify'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenVerify'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenVerify'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenVerify'
+          description: ''
+  /api/usuarios/:
+    get:
+      operationId: usuarios_list
+      description: |-
+        CRUD de usuários.
+
+        - Administradores têm acesso a todos os usuários.
+        - Usuários comuns só conseguem acessar o próprio registro.
+        - Criação por este endpoint é restrita a administradores.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Qual campo usar ao ordenar os resultados.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: Um número de página dentro do conjunto de resultados paginado.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Número de resultados a serem retornados por página.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: Um termo de busca.
+        schema:
+          type: string
+      tags:
+      - usuarios
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserList'
+          description: ''
+    post:
+      operationId: usuarios_create
+      description: |-
+        CRUD de usuários.
+
+        - Administradores têm acesso a todos os usuários.
+        - Usuários comuns só conseguem acessar o próprio registro.
+        - Criação por este endpoint é restrita a administradores.
+      tags:
+      - usuarios
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/User'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/User'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/usuarios/{id}/:
+    get:
+      operationId: usuarios_retrieve
+      description: |-
+        CRUD de usuários.
+
+        - Administradores têm acesso a todos os usuários.
+        - Usuários comuns só conseguem acessar o próprio registro.
+        - Criação por este endpoint é restrita a administradores.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este Usuário.
+        required: true
+      tags:
+      - usuarios
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    put:
+      operationId: usuarios_update
+      description: |-
+        CRUD de usuários.
+
+        - Administradores têm acesso a todos os usuários.
+        - Usuários comuns só conseguem acessar o próprio registro.
+        - Criação por este endpoint é restrita a administradores.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este Usuário.
+        required: true
+      tags:
+      - usuarios
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/User'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/User'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: usuarios_partial_update
+      description: |-
+        CRUD de usuários.
+
+        - Administradores têm acesso a todos os usuários.
+        - Usuários comuns só conseguem acessar o próprio registro.
+        - Criação por este endpoint é restrita a administradores.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este Usuário.
+        required: true
+      tags:
+      - usuarios
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    delete:
+      operationId: usuarios_destroy
+      description: |-
+        CRUD de usuários.
+
+        - Administradores têm acesso a todos os usuários.
+        - Usuários comuns só conseguem acessar o próprio registro.
+        - Criação por este endpoint é restrita a administradores.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este Usuário.
+        required: true
+      tags:
+      - usuarios
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/usuarios/me/:
+    get:
+      operationId: usuarios_me_retrieve
+      description: Retorna os dados do usuário autenticado.
+      summary: Dados do usuário autenticado
+      tags:
+      - usuarios
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+        '401':
+          description: No response body
+    patch:
+      operationId: usuarios_me_partial_update
+      description: Atualiza o nome e/ou telefone do usuário autenticado.
+      summary: Atualizar usuário autenticado
+      tags:
+      - usuarios
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserUpdate'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+        '400':
+          description: No response body
+        '401':
+          description: No response body
+  /api/usuarios/me/foto/:
+    patch:
+      operationId: usuarios_me_foto_partial_update
+      description: Envia ou substitui a foto de perfil do usuário.
+      summary: Enviar foto de perfil
+      tags:
+      - usuarios
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProfilePhoto'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProfilePhoto'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+        '400':
+          description: No response body
+        '401':
+          description: No response body
+    delete:
+      operationId: usuarios_me_foto_destroy
+      description: Remove a foto de perfil do usuário autenticado.
+      summary: Remover foto de perfil
+      tags:
+      - usuarios
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+        '401':
+          description: No response body
+components:
+  schemas:
+    Category:
+      type: object
+      description: Serializer público — usado na vitrine e na Home.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          title: Nome
+          maxLength: 150
+        slug:
+          type: string
+          readOnly: true
+          description: Gerado automaticamente. Usado em URLs e no filtro ?category=slug
+            da API.
+          pattern: ^[-a-zA-Z0-9_]+$
+        description:
+          type: string
+          title: Descrição
+        image_url:
+          type: string
+          nullable: true
+          readOnly: true
+        is_active:
+          type: boolean
+          title: Ativo
+          description: Categorias inativas ficam ocultas na vitrine sem serem excluídas.
+        order:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          title: Ordem de exibição
+          description: Menor número = aparece primeiro. Controla a sequência das pills
+            na Home.
+        product_count:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Criado em
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Atualizado em
+      required:
+      - created_at
+      - id
+      - image_url
+      - name
+      - product_count
+      - slug
+      - updated_at
+    CategoryWrite:
+      type: object
+      description: Serializer de escrita — somente para admin.
+      properties:
+        name:
+          type: string
+          title: Nome
+          maxLength: 150
+        description:
+          type: string
+          title: Descrição
+        image:
+          type: string
+          format: uri
+          nullable: true
+          title: Imagem
+        is_active:
+          type: boolean
+          title: Ativo
+          description: Categorias inativas ficam ocultas na vitrine sem serem excluídas.
+        order:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          title: Ordem de exibição
+          description: Menor número = aparece primeiro. Controla a sequência das pills
+            na Home.
+      required:
+      - name
+    Flavor:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          title: Nome
+          maxLength: 100
+        slug:
+          type: string
+          description: Gerado automaticamente. Usado em filtros de API.
+          maxLength: 120
+          pattern: ^[-a-zA-Z0-9_]+$
+      required:
+      - id
+      - name
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+          title: Código do pedido
+          description: 'Gerado automaticamente. Ex: BRK-A3F9K2.'
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          readOnly: true
+        status_display:
+          type: string
+          readOnly: true
+        subtotal:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        discount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+          title: Desconto
+        delivery_fee:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+          readOnly: true
+          title: Taxa de entrega
+          description: Frete ou retirada.
+        total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        delivery_address:
+          type: string
+          readOnly: true
+          title: Logradouro
+        delivery_city:
+          type: string
+          readOnly: true
+          title: Cidade
+        delivery_state:
+          type: string
+          readOnly: true
+          title: Estado
+        delivery_zip:
+          type: string
+          readOnly: true
+          title: CEP
+        delivery_notes:
+          type: string
+          readOnly: true
+          title: Observações
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Criado em
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Atualizado em
+        confirmed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          title: Confirmado em
+        delivered_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          title: Entregue em
+        total_items:
+          type: string
+          readOnly: true
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+          readOnly: true
+      required:
+      - code
+      - confirmed_at
+      - created_at
+      - delivered_at
+      - delivery_address
+      - delivery_city
+      - delivery_fee
+      - delivery_notes
+      - delivery_state
+      - delivery_zip
+      - discount
+      - id
+      - items
+      - status
+      - status_display
+      - subtotal
+      - total
+      - total_items
+      - updated_at
+    OrderCreate:
+      type: object
+      properties:
+        delivery_address:
+          type: string
+          title: Logradouro
+          maxLength: 300
+        delivery_city:
+          type: string
+          title: Cidade
+          maxLength: 100
+        delivery_state:
+          type: string
+          title: Estado
+          maxLength: 2
+        delivery_zip:
+          type: string
+          title: CEP
+          maxLength: 9
+        delivery_notes:
+          type: string
+          title: Observações
+        delivery_fee:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+          title: Taxa de entrega
+          description: Frete ou retirada.
+        discount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          title: Desconto
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItemCreate'
+          writeOnly: true
+      required:
+      - items
+    OrderItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        product:
+          type: integer
+          readOnly: true
+          title: Produto
+        product_name:
+          type: string
+          readOnly: true
+        product_slug:
+          type: string
+          readOnly: true
+        product_image:
+          type: string
+          format: uri
+          readOnly: true
+        category:
+          type: string
+          readOnly: true
+        flavor:
+          type: string
+          readOnly: true
+          nullable: true
+        quantity:
+          type: integer
+          readOnly: true
+          title: Quantidade
+        unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+          readOnly: true
+          title: Preço unitário
+          description: Salvo no momento da compra. Não sofre alterações retroativas.
+        subtotal:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+      required:
+      - category
+      - flavor
+      - id
+      - product
+      - product_image
+      - product_name
+      - product_slug
+      - quantity
+      - subtotal
+      - unit_price
+    OrderItemCreate:
+      type: object
+      properties:
+        product:
+          type: integer
+        quantity:
+          type: integer
+          minimum: 1
+      required:
+      - product
+      - quantity
+    OrderUpdate:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+    PaginatedCategoryList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+    PaginatedOrderList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Order'
+    PaginatedProductList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+    PaginatedUserList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+    PatchedCategoryWrite:
+      type: object
+      description: Serializer de escrita — somente para admin.
+      properties:
+        name:
+          type: string
+          title: Nome
+          maxLength: 150
+        description:
+          type: string
+          title: Descrição
+        image:
+          type: string
+          format: uri
+          nullable: true
+          title: Imagem
+        is_active:
+          type: boolean
+          title: Ativo
+          description: Categorias inativas ficam ocultas na vitrine sem serem excluídas.
+        order:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          title: Ordem de exibição
+          description: Menor número = aparece primeiro. Controla a sequência das pills
+            na Home.
+    PatchedOrderUpdate:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+    PatchedProductWrite:
+      type: object
+      description: |-
+        Usado pelo admin para criar e editar produtos.
+        flavor e category recebem PKs inteiras (padrão de escrita do DRF).
+      properties:
+        name:
+          type: string
+          title: Nome
+          maxLength: 150
+        description:
+          type: string
+          title: Descrição
+        flavor:
+          type: integer
+          nullable: true
+          title: Sabor
+          description: Sabor principal do produto. Deixe em branco se não se aplica.
+        category:
+          type: integer
+          title: Categoria
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+          title: Preço de venda
+          description: Valor exibido ao cliente (R$).
+        cost_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+          nullable: true
+          title: Preço de custo
+          description: Custo de produção por unidade. Visível apenas no admin.
+        image:
+          type: string
+          format: uri
+          nullable: true
+          title: Imagem
+        stock:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          title: Estoque
+          description: Unidades disponíveis. Decrementado automaticamente via signal.
+        is_active:
+          type: boolean
+          title: Ativo
+        is_featured:
+          type: boolean
+          title: Em destaque
+    PatchedProfilePhoto:
+      type: object
+      description: |-
+        Serializer dedicado ao upload/remoção da foto de perfil.
+        Isolado para que o endpoint de foto não exponha os demais campos.
+      properties:
+        profile_photo:
+          type: string
+          format: uri
+          nullable: true
+          title: Foto de perfil
+          description: 'Foto de perfil do usuário (opcional). Formatos aceitos: JPG,
+            PNG, WEBP. Máx. 5MB.'
+          pattern: (?:jpg|jpeg|png|webp)$
+    PatchedUser:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          title: E-mail
+          description: Endereço de e-mail. Usado como login.
+          maxLength: 255
+        name:
+          type: string
+          title: Nome completo
+          description: Nome completo do usuário.
+          maxLength: 255
+        telefone:
+          type: string
+          description: 'Telefone para contato (opcional). Ex: (47) 99999-0000.'
+          maxLength: 20
+        is_active:
+          type: boolean
+          readOnly: true
+          title: Ativo
+          description: Indica que este usuário está ativo.
+        is_staff:
+          type: boolean
+          readOnly: true
+          title: Equipe
+          description: Indica que este usuário pode acessar o painel admin.
+        profile_photo_url:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Criado em
+    PatchedUserUpdate:
+      type: object
+      description: |-
+        Serializer para atualização de nome e telefone via PATCH /api/usuarios/me/.
+        Só expõe os campos que o próprio usuário pode editar — email e permissões
+        jamais são alterados por este endpoint.
+      properties:
+        name:
+          type: string
+          title: Nome completo
+          description: Nome completo do usuário.
+          maxLength: 255
+        telefone:
+          type: string
+          description: 'Telefone para contato (opcional). Ex: (47) 99999-0000.'
+          maxLength: 20
+    Product:
+      type: object
+      description: |-
+        Retornado para qualquer usuário (inclusive anônimo).
+        NÃO expõe cost_price nem margens.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          title: Nome
+          maxLength: 150
+        slug:
+          type: string
+          readOnly: true
+          description: Gerado automaticamente. Usado em URLs como /produto/cookie-classico/
+          pattern: ^[-a-zA-Z0-9_]+$
+        description:
+          type: string
+          title: Descrição
+        flavor:
+          allOf:
+          - $ref: '#/components/schemas/Flavor'
+          readOnly: true
+        category:
+          allOf:
+          - $ref: '#/components/schemas/Category'
+          readOnly: true
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+          title: Preço de venda
+          description: Valor exibido ao cliente (R$).
+        image_url:
+          type: string
+          nullable: true
+          readOnly: true
+        is_in_stock:
+          type: boolean
+          readOnly: true
+        stock:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          title: Estoque
+          description: Unidades disponíveis. Decrementado automaticamente via signal.
+        is_active:
+          type: boolean
+          title: Ativo
+        is_featured:
+          type: boolean
+          title: Em destaque
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Criado em
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Atualizado em
+      required:
+      - category
+      - created_at
+      - flavor
+      - id
+      - image_url
+      - is_in_stock
+      - name
+      - price
+      - slug
+      - updated_at
+    ProductWrite:
+      type: object
+      description: |-
+        Usado pelo admin para criar e editar produtos.
+        flavor e category recebem PKs inteiras (padrão de escrita do DRF).
+      properties:
+        name:
+          type: string
+          title: Nome
+          maxLength: 150
+        description:
+          type: string
+          title: Descrição
+        flavor:
+          type: integer
+          nullable: true
+          title: Sabor
+          description: Sabor principal do produto. Deixe em branco se não se aplica.
+        category:
+          type: integer
+          title: Categoria
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+          title: Preço de venda
+          description: Valor exibido ao cliente (R$).
+        cost_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+          nullable: true
+          title: Preço de custo
+          description: Custo de produção por unidade. Visível apenas no admin.
+        image:
+          type: string
+          format: uri
+          nullable: true
+          title: Imagem
+        stock:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          title: Estoque
+          description: Unidades disponíveis. Decrementado automaticamente via signal.
+        is_active:
+          type: boolean
+          title: Ativo
+        is_featured:
+          type: boolean
+          title: Em destaque
+      required:
+      - category
+      - name
+      - price
+    StatusEnum:
+      enum:
+      - pending
+      - confirmed
+      - preparing
+      - ready
+      - delivering
+      - delivered
+      - cancelled
+      type: string
+      description: |-
+        * `pending` - Aguardando confirmação
+        * `confirmed` - Confirmado
+        * `preparing` - Em preparo
+        * `ready` - Pronto para entrega
+        * `delivering` - Em entrega
+        * `delivered` - Entregue
+        * `cancelled` - Cancelado
+    TokenObtainPair:
+      type: object
+      properties:
+        email:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          readOnly: true
+      required:
+      - access
+      - email
+      - password
+      - refresh
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          writeOnly: true
+      required:
+      - access
+      - refresh
+    TokenVerify:
+      type: object
+      properties:
+        token:
+          type: string
+          writeOnly: true
+      required:
+      - token
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          title: E-mail
+          description: Endereço de e-mail. Usado como login.
+          maxLength: 255
+        name:
+          type: string
+          title: Nome completo
+          description: Nome completo do usuário.
+          maxLength: 255
+        telefone:
+          type: string
+          description: 'Telefone para contato (opcional). Ex: (47) 99999-0000.'
+          maxLength: 20
+        is_active:
+          type: boolean
+          readOnly: true
+          title: Ativo
+          description: Indica que este usuário está ativo.
+        is_staff:
+          type: boolean
+          readOnly: true
+          title: Equipe
+          description: Indica que este usuário pode acessar o painel admin.
+        profile_photo_url:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          title: Criado em
+      required:
+      - created_at
+      - email
+      - id
+      - is_active
+      - is_staff
+      - name
+      - profile_photo_url
+    UserRegistration:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          title: E-mail
+          description: Endereço de e-mail. Usado como login.
+          maxLength: 255
+        name:
+          type: string
+          title: Nome completo
+          description: Nome completo do usuário.
+          maxLength: 255
+        telefone:
+          type: string
+          description: 'Telefone para contato (opcional). Ex: (47) 99999-0000.'
+          maxLength: 20
+        password:
+          type: string
+          writeOnly: true
+          minLength: 8
+      required:
+      - email
+      - id
+      - name
+      - password
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
