@@ -1,12 +1,11 @@
-from django.db.models import IntegerField, Prefetch, Sum, Value
-from django.db.models.functions import Coalesce
+from django.db.models import Prefetch
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 
-from orders.models import Order, OrderItem
+from orders.models import Order, OrderItem, OrderKitComponent, OrderKitItem
 from orders.serializers import (
     OrderCreateSerializer,
     OrderSerializer,
@@ -22,7 +21,6 @@ from orders.services import OrderServiceError, cancel_order
     partial_update=extend_schema(summary="Atualizar status do pedido [admin]"),
 )
 class OrderViewSet(viewsets.ModelViewSet):
-    # Queryset base necessário para o drf-spectacular identificar o model.
     queryset = Order.objects.none()
     permission_classes = [IsAuthenticated]
     http_method_names = ["get", "post", "patch", "head", "options"]
@@ -41,16 +39,18 @@ class OrderViewSet(viewsets.ModelViewSet):
             "product__category",
             "product__flavor",
         ).order_by("id")
+        component_queryset = OrderKitComponent.objects.select_related("product").order_by("id")
+        kit_item_queryset = (
+            OrderKitItem.objects.select_related("kit")
+            .prefetch_related(Prefetch("components", queryset=component_queryset))
+            .order_by("id")
+        )
 
         queryset = (
             Order.objects.select_related("user", "payment")
-            .prefetch_related(Prefetch("items", queryset=item_queryset))
-            .annotate(
-                total_items_count=Coalesce(
-                    Sum("items__quantity"),
-                    Value(0),
-                    output_field=IntegerField(),
-                )
+            .prefetch_related(
+                Prefetch("items", queryset=item_queryset),
+                Prefetch("kit_items", queryset=kit_item_queryset),
             )
             .order_by("-created_at")
         )

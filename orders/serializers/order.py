@@ -3,11 +3,13 @@ from rest_framework import serializers
 from orders.models import Order
 
 from .order_item import OrderItemSerializer
+from .order_kit_item import OrderKitItemSerializer
 from .payment import PaymentSerializer
 
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
+    kit_items = OrderKitItemSerializer(many=True, read_only=True)
     payment = PaymentSerializer(read_only=True)
     status_display = serializers.CharField(source="get_status_display", read_only=True)
     delivery_method_display = serializers.CharField(
@@ -45,17 +47,24 @@ class OrderSerializer(serializers.ModelSerializer):
             "cancelled_at",
             "total_items",
             "items",
+            "kit_items",
             "payment",
         ]
         read_only_fields = fields
 
     def get_total_items(self, obj: Order) -> int:
-        annotated_value = getattr(obj, "total_items_count", None)
-        if annotated_value is not None:
-            return annotated_value
+        prefetched = getattr(obj, "_prefetched_objects_cache", {})
+        product_items = prefetched.get("items")
+        kit_items = prefetched.get("kit_items")
 
-        prefetched_items = getattr(obj, "_prefetched_objects_cache", {}).get("items")
-        if prefetched_items is not None:
-            return sum(item.quantity for item in prefetched_items)
-
-        return sum(item.quantity for item in obj.items.all())
+        product_total = (
+            sum(item.quantity for item in product_items)
+            if product_items is not None
+            else sum(item.quantity for item in obj.items.all())
+        )
+        kit_total = (
+            sum(item.quantity for item in kit_items)
+            if kit_items is not None
+            else sum(item.quantity for item in obj.kit_items.all())
+        )
+        return product_total + kit_total

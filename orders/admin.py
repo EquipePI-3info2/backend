@@ -1,7 +1,7 @@
 from django.contrib import admin, messages
 from django.utils.html import format_html
 
-from orders.models import Order, OrderItem, Payment
+from orders.models import Order, OrderItem, OrderKitItem, Payment
 from orders.services import (
     OrderServiceError,
     transition_order_status,
@@ -21,13 +21,25 @@ class OrderItemInline(admin.TabularInline):
         return f"R$ {obj.subtotal:.2f}" if obj.pk else "-"
 
 
+class OrderKitItemInline(admin.TabularInline):
+    model = OrderKitItem
+    extra = 0
+    can_delete = False
+    fields = ["kit_name", "quantity", "unit_price", "subtotal_display"]
+    readonly_fields = fields
+
+    @admin.display(description="Subtotal")
+    def subtotal_display(self, obj):
+        return f"R$ {obj.subtotal:.2f}" if obj.pk else "-"
+
+
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     list_display = ["code", "user", "status_badge", "total", "created_at"]
     list_filter = ["status", "delivery_method", "created_at"]
     search_fields = ["code", "user__email", "user__name"]
     ordering = ["-created_at"]
-    inlines = [OrderItemInline]
+    inlines = [OrderItemInline, OrderKitItemInline]
     actions = [
         "confirm_orders",
         "mark_preparing",

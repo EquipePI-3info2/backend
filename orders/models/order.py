@@ -134,7 +134,7 @@ class Order(models.Model):
         super().save(*args, **kwargs)
 
     def recalculate_totals(self):
-        subtotal = self.items.aggregate(
+        product_subtotal = self.items.aggregate(
             subtotal=Sum(
                 ExpressionWrapper(
                     F("quantity") * F("unit_price"),
@@ -143,7 +143,16 @@ class Order(models.Model):
             )
         )["subtotal"] or Decimal("0.00")
 
-        self.subtotal = subtotal
+        kit_subtotal = self.kit_items.aggregate(
+            subtotal=Sum(
+                ExpressionWrapper(
+                    F("quantity") * F("unit_price"),
+                    output_field=DecimalField(max_digits=10, decimal_places=2),
+                )
+            )
+        )["subtotal"] or Decimal("0.00")
+
+        self.subtotal = product_subtotal + kit_subtotal
         self.total = max(
             self.subtotal - self.discount + self.delivery_fee,
             Decimal("0.00"),
