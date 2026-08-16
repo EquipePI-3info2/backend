@@ -4,9 +4,9 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from catalog.models import Category, Product
+from catalog.models import Category, Kit, KitItem, Product
 from core.models import Address, User
-from orders.models import Order, Payment
+from orders.models import Order, OrderKitItem, Payment
 from stock.models import StockMovement
 
 
@@ -337,3 +337,79 @@ class OrderApiTests(APITestCase):
         self.assertEqual(len(me_response.data["results"]), 1)
         self.assertEqual(me_response.data["results"][0]["id"], admin_order_id)
         self.assertEqual(latest_response.data["id"], admin_order_id)
+
+    def create_test_kit(self):
+        second_product = Product.objects.create(
+            category=self.category,
+            name="Brownie do kit",
+            price=Decimal("8.00"),
+            cost_price=Decimal("3.00"),
+            stock=4,
+            is_active=True,
+        )
+        kit = Kit.objects.create(
+            name="Kit promocional",
+            promotional_price=Decimal("25.00"),
+            is_active=True,
+        )
+        KitItem.objects.create(kit=kit, product=self.product, quantity=2)
+        KitItem.objects.create(kit=kit, product=second_product, quantity=1)
+        return kit, second_product
+
+    def test_create_order_with_kit_uses_promotional_price_and_snapshots_components(self):
+        kit, second_product = self.create_test_kit()
+
+        response = self.create_order(items=[], kits=[{"kit": kit.pk, "quantity": 1}])
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        order = Order.objects.get(pk=response.data["id"])
+        order_kit = OrderKitItem.objects.get(order=order)
+        self.assertEqual(order.subtotal, Decimal("25.00"))
+        self.assertEqual(order.total, Decimal("25.00"))
+        self.assertEqual(order_kit.kit_name, "Kit promocional")
+        self.assertEqual(order_kit.unit_price, Decimal("25.00"))
+        self.assertEqual(order_kit.components.count(), 2)
+        self.product.refresh_from_db()
+        second_product.refresh_from_db()
+        self.assertEqual(self.product.stock, 5)
+        self.assertEqual(second_product.stock, 4)
+
+    def test_kit_payment_approval_deducts_component_stock_and_refund_returns_it(self):
+        kit, second_product = self.create_test_kit()
+        response = self.create_order(items=[], kits=[{"kit": kit.pk, "quantity": 2}])
+        order = Order.objects.get(pk=response.data["id"])
+        self.authenticate(self.admin)
+        payment_url = reverse("payments-detail", args=[order.payment_id])
+
+        approve = self.client.patch(
+            payment_url,
+            {"status": Payment.Status.APPROVED},
+            format="json",
+        )
+        self.assertEqual(approve.status_code, status.HTTP_200_OK)
+        self.product.refresh_from_db()
+        second_product.refresh_from_db()
+        self.assertEqual(self.product.stock, 1)
+        self.assertEqual(second_product.stock, 2)
+
+        refund = self.client.patch(
+            payment_url,
+            {"status": Payment.Status.REFUNDED},
+            format="json",
+        )
+        self.assertEqual(refund.status_code, status.HTTP_200_OK)
+        self.product.refresh_from_db()
+        second_product.refresh_from_db()
+        self.assertEqual(self.product.stock, 5)
+        self.assertEqual(second_product.stock, 4)
+
+    def test_regular_product_and_kit_share_same_stock_validation(self):
+        kit, _ = self.create_test_kit()
+
+        response = self.create_order(
+            items=[{"product": self.product.pk, "quantity": 2}],
+            kits=[{"kit": kit.pk, "quantity": 2}],
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("items", response.data)

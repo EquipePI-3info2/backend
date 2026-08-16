@@ -1,4 +1,5 @@
 from drf_spectacular.utils import extend_schema_field
+from django.utils.text import slugify
 from rest_framework import serializers
 
 from ..models import Category
@@ -36,6 +37,18 @@ class CategorySerializer(serializers.ModelSerializer):
 
 class CategoryWriteSerializer(serializers.ModelSerializer):
     """Serializer de escrita — somente para admin."""
+
     class Meta:
         model = Category
         fields = ["name", "description", "image", "is_active", "order"]
+
+    def validate_name(self, value):
+        slug = slugify(value)
+        queryset = Category.objects.filter(slug=slug)
+        if self.instance is not None:
+            queryset = queryset.exclude(pk=self.instance.pk)
+        if queryset.exists():
+            raise serializers.ValidationError(
+                "Já existe uma categoria com este nome ou com um nome equivalente."
+            )
+        return value
