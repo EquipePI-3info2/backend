@@ -13,42 +13,65 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AlterModelOptions(
             name='user',
-            options={'ordering': ['name'], 'verbose_name': 'Usuário', 'verbose_name_plural': 'Usuários'},
+            options={
+                'ordering': ['name'],
+                'verbose_name': 'Usuário',
+                'verbose_name_plural': 'Usuários',
+            },
         ),
         migrations.AddField(
             model_name='user',
             name='created_at',
-            field=models.DateTimeField(auto_now_add=True, default=django.utils.timezone.now, verbose_name='criado em'),
+            field=models.DateTimeField(
+                auto_now_add=True,
+                default=django.utils.timezone.now,
+                verbose_name='criado em',
+            ),
             preserve_default=False,
         ),
         migrations.AddField(
             model_name='user',
-            name='telefone',
-            field=models.CharField(blank=True, default='', help_text='Telefone para contato (opcional). Ex: (47) 99999-0000.', max_length=20, verbose_name='telefone'),
-        ),
-        migrations.AddField(
-            model_name='user',
             name='updated_at',
-            field=models.DateTimeField(auto_now=True, verbose_name='atualizado em'),
+            field=models.DateTimeField(
+                auto_now=True,
+                verbose_name='atualizado em',
+            ),
         ),
         migrations.AlterField(
             model_name='user',
             name='email',
-            field=models.EmailField(help_text='Endereço de e-mail. Usado como login.', max_length=255, unique=True, verbose_name='e-mail'),
+            field=models.EmailField(
+                help_text='Endereço de e-mail. Usado como login.',
+                max_length=255,
+                unique=True,
+                verbose_name='e-mail',
+            ),
         ),
         migrations.AlterField(
             model_name='user',
             name='is_active',
-            field=models.BooleanField(default=True, help_text='Indica que este usuário está ativo.', verbose_name='ativo'),
+            field=models.BooleanField(
+                default=True,
+                help_text='Indica que este usuário está ativo.',
+                verbose_name='ativo',
+            ),
         ),
         migrations.AlterField(
             model_name='user',
             name='is_staff',
-            field=models.BooleanField(default=False, help_text='Indica que este usuário pode acessar o painel admin.', verbose_name='equipe'),
+            field=models.BooleanField(
+                default=False,
+                help_text='Indica que este usuário pode acessar o painel admin.',
+                verbose_name='equipe',
+            ),
         ),
         migrations.AlterField(
             model_name='user',
             name='name',
-            field=models.CharField(help_text='Nome completo do usuário.', max_length=255, verbose_name='nome completo'),
+            field=models.CharField(
+                help_text='Nome completo do usuário.',
+                max_length=255,
+                verbose_name='nome completo',
+            ),
         ),
     ]

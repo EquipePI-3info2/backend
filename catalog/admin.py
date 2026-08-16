@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 
-from .models import Category, Flavor, Product
+from .models import Category, Flavor, Kit, KitItem, Product
 
 
 @admin.register(Category)
@@ -42,7 +42,7 @@ class ProductAdmin(admin.ModelAdmin):
     ]
     list_editable = ["price", "stock", "is_active", "is_featured"]
     list_filter = ["is_active", "is_featured", "category", StockStatusFilter]
-    search_fields = ["name", "description", "slug", "flavor"]
+    search_fields = ["name", "description", "slug", "flavor__name", "category__name"]
     prepopulated_fields = {"slug": ("name",)}
     readonly_fields = ["margin_display", "created_at", "updated_at"]
     autocomplete_fields = ["category"]
@@ -94,3 +94,37 @@ class FlavorAdmin(admin.ModelAdmin):
     prepopulated_fields = {"slug": ("name",)}
     readonly_fields = ["created_at", "updated_at"]
     ordering = ["name"]
+
+
+class KitItemInline(admin.TabularInline):
+    model = KitItem
+    extra = 1
+    autocomplete_fields = ["product"]
+
+
+@admin.register(Kit)
+class KitAdmin(admin.ModelAdmin):
+    list_display = [
+        "name",
+        "promotional_price",
+        "regular_price_display",
+        "available_stock_display",
+        "is_active",
+        "is_featured",
+        "updated_at",
+    ]
+    list_editable = ["is_active", "is_featured"]
+    list_filter = ["is_active", "is_featured"]
+    search_fields = ["name", "description", "slug", "items__product__name"]
+    prepopulated_fields = {"slug": ("name",)}
+    readonly_fields = ["created_at", "updated_at"]
+    ordering = ["-is_featured", "name"]
+    inlines = [KitItemInline]
+
+    @admin.display(description="Preço normal")
+    def regular_price_display(self, obj):
+        return f"R$ {obj.regular_price:.2f}"
+
+    @admin.display(description="Kits disponíveis")
+    def available_stock_display(self, obj):
+        return obj.available_stock

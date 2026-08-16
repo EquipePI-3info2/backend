@@ -3,15 +3,9 @@
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from ..models import Flavor, Product
+from ..models import Product
 from .category import CategorySerializer
-
-
-# ── FlavorSerializer (somente leitura, embutido no produto) ───────────────────
-class FlavorSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Flavor
-        fields = ["id", "name", "slug"]
+from .flavor import FlavorSummarySerializer
 
 
 # ── Serializer público (vitrine) ──────────────────────────────────────────────
@@ -21,7 +15,7 @@ class ProductSerializer(serializers.ModelSerializer):
     NÃO expõe cost_price nem margens.
     """
     category = CategorySerializer(read_only=True)
-    flavor = FlavorSerializer(read_only=True)        # ← objeto, não ID
+    flavor = FlavorSummarySerializer(read_only=True)        # ← objeto, não ID
     image_url = serializers.SerializerMethodField()
     is_in_stock = serializers.BooleanField(read_only=True)
 
@@ -54,7 +48,7 @@ class ProductAdminSerializer(serializers.ModelSerializer):
     """
     category_name = serializers.CharField(source="category.name", read_only=True)
     category_slug = serializers.CharField(source="category.slug", read_only=True)
-    flavor = FlavorSerializer(read_only=True)   # ← objeto, não ID
+    flavor = FlavorSummarySerializer(read_only=True)   # ← objeto, não ID
     image_url = serializers.SerializerMethodField()
     is_in_stock = serializers.BooleanField(read_only=True)
     gross_margin_pct = serializers.DecimalField(max_digits=5, decimal_places=2, read_only=True)
@@ -110,9 +104,12 @@ class ProductWriteSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, attrs):
-        price = attrs.get("price")
-        cost_price = attrs.get("cost_price")
-        if price and cost_price and cost_price >= price:
+        price = attrs.get("price", getattr(self.instance, "price", None))
+        cost_price = attrs.get(
+            "cost_price",
+            getattr(self.instance, "cost_price", None),
+        )
+        if price is not None and cost_price is not None and cost_price >= price:
             raise serializers.ValidationError(
                 {"cost_price": "O preço de custo deve ser menor que o preço de venda."}
             )

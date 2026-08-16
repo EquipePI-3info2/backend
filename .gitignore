@@ -141,3 +141,6 @@ poetry.toml
 
 # Project-specific
 dump.json
+staticfiles/
+
+staticfiles/

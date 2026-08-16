@@ -1,5 +1,6 @@
+from django.db.models.deletion import ProtectedError
 from drf_spectacular.utils import extend_schema, extend_schema_view
-from rest_framework import filters, viewsets
+from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -60,3 +61,18 @@ class CategoryViewSet(viewsets.ModelViewSet):
             return self.get_paginated_response(s.data)
         s = ProductSerializer(qs, many=True, context={"request": request})
         return Response(s.data)
+    def destroy(self, request, *args, **kwargs):
+        category = self.get_object()
+        try:
+            category.delete()
+        except ProtectedError:
+            return Response(
+                {
+                    "detail": (
+                        "Esta categoria possui produtos vinculados e não pode ser excluída. "
+                        "Desative a categoria para ocultá-la da vitrine."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response(status=status.HTTP_204_NO_CONTENT)

@@ -66,7 +66,7 @@ class Product(models.Model):
     stock = models.PositiveIntegerField(
         "Estoque",
         default=0,
-        help_text="Unidades disponíveis. Decrementado automaticamente via signal.",
+        help_text="Unidades disponíveis. Atualizado pelas movimentações de estoque.",
     )
 
     # ── Visibilidade ──────────────────────────────────────────

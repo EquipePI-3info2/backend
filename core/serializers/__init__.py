@@ -1,3 +1,4 @@
+from .address import AddressSerializer
 from .user import (
     ProfilePhotoSerializer,
     UserRegistrationSerializer,
@@ -6,8 +7,9 @@ from .user import (
 )
 
 __all__ = [
-    'UserSerializer',
-    'UserRegistrationSerializer',
-    'ProfilePhotoSerializer',
-    'UserUpdateSerializer',
+    "AddressSerializer",
+    "UserSerializer",
+    "UserRegistrationSerializer",
+    "ProfilePhotoSerializer",
+    "UserUpdateSerializer",
 ]

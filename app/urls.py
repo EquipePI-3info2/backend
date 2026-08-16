@@ -14,13 +14,15 @@ from rest_framework_simplejwt.views import (
     TokenVerifyView,
 )
 
-from catalog.views import CategoryViewSet, ProductViewSet
-from core.views import UserRegistrationView, UserViewSet
+from catalog.views import CategoryViewSet, FlavorViewSet, KitViewSet, ProductViewSet
+from core.views import AddressViewSet, UserRegistrationView, UserViewSet
 
-# ── Router único ──────────────────────────────────────────────────────────────
 router = DefaultRouter()
 router.register(r"usuarios", UserViewSet, basename="usuarios")
+router.register(r"addresses", AddressViewSet, basename="addresses")
 router.register(r"categories", CategoryViewSet, basename="category")
+router.register(r"flavors", FlavorViewSet, basename="flavor")
+router.register(r"kits", KitViewSet, basename="kit")
 router.register(r"products", ProductViewSet, basename="product")
 
 urlpatterns = [
@@ -33,6 +35,7 @@ urlpatterns = [
     path("api/token/verify/", TokenVerifyView.as_view(), name="token_verify"),
     path("api/registro/", UserRegistrationView.as_view(), name="user_registration"),
     path("api/", include(router.urls)),
+    path("api/", include("orders.urls")),
 ]
 
 if settings.DEBUG:
