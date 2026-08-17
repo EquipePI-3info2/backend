@@ -149,6 +149,7 @@ def _stock_requirements(order):
     kit_items = order.kit_items.prefetch_related(
         "components__product"
     ).order_by("id")
+
     for kit_item in kit_items:
         for component in kit_item.components.all():
             required[component.product_id] += (
@@ -202,7 +203,7 @@ def _return_order_stock(order, actor):
 @transaction.atomic
 def transition_order_status(*, order, new_status, actor):
     order = (
-        Order.objects.select_for_update()
+        Order.objects.select_for_update(of=("self",))
         .select_related("payment", "user")
         .get(pk=order.pk)
     )
@@ -214,21 +215,28 @@ def transition_order_status(*, order, new_status, actor):
     if new_status not in allowed:
         raise OrderServiceError(
             f"Não é permitido alterar o pedido de "
-            f"'{order.get_status_display()}' para '{Order.Status(new_status).label}'."
+            f"'{order.get_status_display()}' para "
+            f"'{Order.Status(new_status).label}'."
         )
 
     if new_status == Order.Status.CONFIRMED:
-        if order.payment is None or order.payment.status != Payment.Status.APPROVED:
+        if (
+            order.payment is None
+            or order.payment.status != Payment.Status.APPROVED
+        ):
             raise OrderServiceError(
-                "O pedido somente pode ser confirmado após a aprovação do pagamento."
+                "O pedido somente pode ser confirmado "
+                "após a aprovação do pagamento."
             )
+
         _deduct_order_stock(order, actor)
         order.mark_confirmed()
 
     if new_status == Order.Status.DELIVERING:
         if order.delivery_method != Order.DeliveryMethod.DELIVERY:
             raise OrderServiceError(
-                "Pedidos para retirada não podem ser marcados como 'Em entrega'."
+                "Pedidos para retirada não podem ser "
+                "marcados como 'Em entrega'."
             )
 
     if new_status == Order.Status.DELIVERED:
@@ -237,23 +245,39 @@ def transition_order_status(*, order, new_status, actor):
             and order.status != Order.Status.DELIVERING
         ):
             raise OrderServiceError(
-                "Pedidos com entrega devem passar pelo status 'Em entrega'."
+                "Pedidos com entrega devem passar "
+                "pelo status 'Em entrega'."
             )
+
         order.mark_delivered()
 
     if new_status == Order.Status.CANCELLED:
-        if order.payment and order.payment.status == Payment.Status.APPROVED:
+        if (
+            order.payment
+            and order.payment.status == Payment.Status.APPROVED
+        ):
             raise OrderServiceError(
                 "Estorne o pagamento aprovado antes de cancelar o pedido."
             )
+
         _return_order_stock(order, actor)
         order.mark_cancelled()
-        if order.payment and order.payment.status == Payment.Status.PENDING:
+
+        if (
+            order.payment
+            and order.payment.status == Payment.Status.PENDING
+        ):
             order.payment.status = Payment.Status.CANCELLED
-            order.payment.save(update_fields=["status", "updated_at"])
+            order.payment.save(
+                update_fields=[
+                    "status",
+                    "updated_at",
+                ]
+            )
 
     previous_status = order.status
     order.status = new_status
+
     order.save(
         update_fields=[
             "status",
@@ -273,15 +297,21 @@ def transition_order_status(*, order, new_status, actor):
         new_status,
         actor.pk,
     )
+
     return order
 
 
 @transaction.atomic
 def cancel_order(*, order, actor):
-    if not actor.is_staff and order.status != Order.Status.PENDING:
+    if (
+        not actor.is_staff
+        and order.status != Order.Status.PENDING
+    ):
         raise OrderServiceError(
-            "O cliente somente pode cancelar um pedido que ainda aguarda pagamento."
+            "O cliente somente pode cancelar um pedido "
+            "que ainda aguarda pagamento."
         )
+
     return transition_order_status(
         order=order,
         new_status=Order.Status.CANCELLED,
@@ -299,42 +329,62 @@ def update_payment_status(
     amount_paid=None,
 ):
     payment = (
-        Payment.objects.select_for_update()
+        Payment.objects.select_for_update(of=("self",))
         .select_related("order")
         .get(pk=payment.pk)
     )
+
     try:
         order = payment.order
     except Order.DoesNotExist as exc:
-        raise OrderServiceError("O pagamento não está associado a um pedido.") from exc
+        raise OrderServiceError(
+            "O pagamento não está associado a um pedido."
+        ) from exc
 
     if new_status == payment.status:
         return payment
 
     allowed = PAYMENT_TRANSITIONS.get(payment.status, set())
+
     if new_status not in allowed:
         raise OrderServiceError(
             f"Não é permitido alterar o pagamento de "
-            f"'{payment.get_status_display()}' para '{Payment.Status(new_status).label}'."
+            f"'{payment.get_status_display()}' para "
+            f"'{Payment.Status(new_status).label}'."
         )
 
-    if order.status == Order.Status.CANCELLED and new_status == Payment.Status.APPROVED:
-        raise OrderServiceError("Não é possível aprovar o pagamento de um pedido cancelado.")
+    if (
+        order.status == Order.Status.CANCELLED
+        and new_status == Payment.Status.APPROVED
+    ):
+        raise OrderServiceError(
+            "Não é possível aprovar o pagamento de um pedido cancelado."
+        )
 
     previous_status = payment.status
     payment.status = new_status
+
     if transaction_id:
         payment.transaction_id = transaction_id
 
     if new_status == Payment.Status.APPROVED:
         expected_amount = order.total
-        paid_value = expected_amount if amount_paid is None else amount_paid
+
+        paid_value = (
+            expected_amount
+            if amount_paid is None
+            else amount_paid
+        )
+
         if paid_value != expected_amount:
             raise OrderServiceError(
-                f"O valor aprovado deve ser exatamente R$ {expected_amount}."
+                f"O valor aprovado deve ser exatamente "
+                f"R$ {expected_amount}."
             )
+
         payment.amount_paid = paid_value
         payment.paid_at = timezone.now()
+
     elif new_status in {
         Payment.Status.PENDING,
         Payment.Status.REFUSED,
@@ -359,7 +409,11 @@ def update_payment_status(
             new_status=Order.Status.CONFIRMED,
             actor=actor,
         )
-    elif new_status in {Payment.Status.CANCELLED, Payment.Status.REFUNDED}:
+
+    elif new_status in {
+        Payment.Status.CANCELLED,
+        Payment.Status.REFUNDED,
+    }:
         if order.status != Order.Status.CANCELLED:
             transition_order_status(
                 order=order,
@@ -374,4 +428,5 @@ def update_payment_status(
         new_status,
         actor.pk,
     )
+
     return payment
