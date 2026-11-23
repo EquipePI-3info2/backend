@@ -106,6 +106,7 @@ def create_order(
             product=item["product"],
             quantity=item["quantity"],
             unit_price=item["product"].price,
+            unit_cost=item["product"].cost_price,
         )
         for item in items
     )
@@ -128,6 +129,7 @@ def create_order(
                 product=item.product,
                 product_name=item.product.name,
                 quantity_per_kit=item.quantity,
+                unit_cost=item.product.cost_price,
             )
             for item in kit_items
         )

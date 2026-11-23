@@ -31,6 +31,14 @@ class OrderItem(models.Model):
         help_text="Salvo no momento da compra. Não sofre alterações retroativas.",
     )
 
+    unit_cost = models.DecimalField(
+        "Custo unitário na venda",
+        max_digits=8,
+        decimal_places=2,
+        null=True,
+        blank=True,
+    )
+
     class Meta:
         verbose_name = "Item do pedido"
         verbose_name_plural = "Itens do pedido"

@@ -73,6 +73,14 @@ class OrderKitComponent(models.Model):
         validators=[MinValueValidator(1)],
     )
 
+    unit_cost = models.DecimalField(
+        "Custo unitário na venda",
+        max_digits=8,
+        decimal_places=2,
+        null=True,
+        blank=True,
+    )
+
     class Meta:
         verbose_name = "Componente do kit no pedido"
         verbose_name_plural = "Componentes dos kits nos pedidos"
